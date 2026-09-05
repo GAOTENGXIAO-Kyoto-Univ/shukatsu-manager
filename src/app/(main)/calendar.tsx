@@ -143,9 +143,12 @@ export default function CalendarScreen() {
           p={isDesktop ? '$xl' : '$base'}
           pb="$xxl"
           width="100%"
-          style={{ alignSelf: 'center' }}
         >
-          <XStack gap="$base" style={{ alignItems: 'flex-end', justifyContent: 'space-between' }}>
+          <XStack
+            gap="$base"
+            pt={isDesktop ? '$md' : 0}
+            style={{ alignItems: 'flex-end', justifyContent: 'space-between' }}
+          >
             <YStack gap="$xs">
               <Text color="$textMuted" fontSize={13} fontWeight="600" letterSpacing={1}>
                 CALENDAR

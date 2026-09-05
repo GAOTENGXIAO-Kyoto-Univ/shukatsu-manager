@@ -3,7 +3,7 @@ import { useQuery_experimental as useQuery } from 'convex/react';
 import { Href, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView } from 'react-native';
-import { XStack, YStack, Text } from 'tamagui';
+import { XStack, YStack, Text, useMedia } from 'tamagui';
 
 import { api } from '../../../convex/_generated/api';
 import { ApplicationActionMenu } from '@/components/companies/ApplicationActionMenu';
@@ -97,6 +97,8 @@ function companiesHref(params: AppliedFilters & { q: string }) {
 }
 
 export default function CompaniesScreen() {
+  const media = useMedia();
+  const isDesktop = Boolean(media.md);
   const router = useRouter();
   const pathname = usePathname();
   const params = useLocalSearchParams();
@@ -279,8 +281,17 @@ export default function CompaniesScreen() {
         scrollEventThrottle={160}
         style={{ flex: 1 }}
       >
-        <YStack width="100%" maxW={1040} p="$base" pb="$xl" style={{ alignSelf: 'center' }}>
-          <XStack gap="$base" py="$lg" style={{ alignItems: 'center', justifyContent: 'space-between' }}>
+        <YStack
+          width="100%"
+          maxW={1040}
+          p={isDesktop ? '$xl' : '$base'}
+          pb="$xl"
+        >
+          <XStack
+            gap="$base"
+            py={isDesktop ? '$md' : '$lg'}
+            style={{ alignItems: 'center', justifyContent: 'space-between' }}
+          >
             <Text color="$text" fontSize={28} fontWeight="600">
               企业
             </Text>

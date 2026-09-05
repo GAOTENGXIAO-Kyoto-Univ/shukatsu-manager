@@ -20,8 +20,14 @@ export function KnowledgeHomeScreen() {
   const isDesktop = Boolean(media.md);
 
   return (
-    <KnowledgePage>
-      <YStack borderBottomColor="$border" borderBottomWidth={1} gap="$xs" pb="$lg" pt="$lg">
+    <KnowledgePage alignWithPrimaryPages={isDesktop}>
+      <YStack
+        borderBottomColor="$border"
+        borderBottomWidth={1}
+        gap="$xs"
+        pb="$lg"
+        pt={isDesktop ? '$md' : '$lg'}
+      >
         <Text color="$text" fontSize={30} fontWeight="600" lineHeight={38}>知识库</Text>
         <Text color="$textSecondary" lineHeight={22}>把面试经验整理成下一次能直接使用的答案与行动。</Text>
       </YStack>

@@ -6,11 +6,24 @@ import { Text, XStack, YStack } from 'tamagui';
 import { AppButton } from '@/components/ui/AppButton';
 import { AppInput } from '@/components/ui/AppInput';
 
-export function KnowledgePage({ children }: { children: React.ReactNode }) {
+export function KnowledgePage({
+  alignWithPrimaryPages = false,
+  children,
+}: {
+  alignWithPrimaryPages?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <YStack flex={1} bg="$background">
       <ScrollView keyboardShouldPersistTaps="handled" style={{ flex: 1 }}>
-        <YStack gap="$xl" maxW={1180} width="100%" p="$base" pb="$xxl" style={{ alignSelf: 'center' }}>
+        <YStack
+          gap="$xl"
+          maxW={1180}
+          width="100%"
+          p={alignWithPrimaryPages ? '$xl' : '$base'}
+          pb="$xxl"
+          style={{ alignSelf: alignWithPrimaryPages ? 'flex-start' : 'center' }}
+        >
           {children}
         </YStack>
       </ScrollView>
