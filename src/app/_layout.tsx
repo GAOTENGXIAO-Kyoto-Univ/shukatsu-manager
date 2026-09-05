@@ -1,18 +1,42 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { ClerkProvider, useAuth } from '@clerk/expo';
+import { ConvexReactClient } from 'convex/react';
+import { ConvexProviderWithClerk } from 'convex/react-clerk';
+import { Stack } from 'expo-router';
+import { TamaguiProvider } from 'tamagui';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import tamaguiConfig from '../../tamagui.config';
 
-SplashScreen.preventAutoHideAsync();
+function requireEnv(value: string | undefined, name: string) {
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  return value;
+}
+
+const clerkPublishableKey = requireEnv(
+  process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY,
+  'EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY',
+);
+const convex = new ConvexReactClient(
+  requireEnv(process.env.EXPO_PUBLIC_CONVEX_URL, 'EXPO_PUBLIC_CONVEX_URL'),
+);
+
+export default function RootLayout() {
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <ClerkProvider
+      publishableKey={clerkPublishableKey}
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
+    >
+      <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+        <TamaguiProvider config={tamaguiConfig} defaultTheme="light">
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(main)" />
+          </Stack>
+        </TamaguiProvider>
+      </ConvexProviderWithClerk>
+    </ClerkProvider>
   );
 }
