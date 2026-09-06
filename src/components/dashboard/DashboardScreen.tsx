@@ -8,7 +8,7 @@ import {
 } from '@/components/dashboard/DashboardSections';
 import { useTimeBucket } from '@/hooks/useTimeBucket';
 
-export default function DashboardScreen() {
+export function DashboardScreen() {
   const media = useMedia();
   const timeBucket = useTimeBucket();
   const isDesktop = Boolean(media.md);

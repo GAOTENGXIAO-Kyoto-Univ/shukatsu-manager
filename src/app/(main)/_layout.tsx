@@ -30,7 +30,6 @@ export default function TabLayout() {
       <AppShell>
         <SensitiveReplayMask>
           <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
             <Stack.Screen name="companies" />
             <Stack.Screen name="applications/[applicationId]" />
             <Stack.Screen name="applications/[applicationId]/research" />
