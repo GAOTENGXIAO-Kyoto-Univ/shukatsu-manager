@@ -125,6 +125,18 @@ function hasMeaningfulInterviewContent(fields: ReturnType<typeof normalizeInterv
   return Object.values(fields).some((value) => value !== undefined);
 }
 
+function hasMeaningfulReview(fields: Pick<
+  Doc<"interviewDetails">,
+  "goodPoints" | "improvementPoints" | "nextImprovement" | "overallNote"
+>) {
+  return Boolean(
+    fields.goodPoints ||
+    fields.improvementPoints ||
+    fields.nextImprovement ||
+    fields.overallNote
+  );
+}
+
 function toInterviewDetailDto(interviewDetail: Doc<"interviewDetails">) {
   return {
     interviewDetailId: interviewDetail._id,
@@ -251,7 +263,10 @@ export const create = mutation({
       });
     }
 
-    return interviewDetailId;
+    return {
+      interviewDetailId,
+      becameMeaningfulReview: hasMeaningfulReview(fields),
+    };
   },
 });
 
@@ -279,6 +294,22 @@ export const update = mutation({
     const improvementChanged =
       nextImprovementPoints !== owned.interviewDetail.improvementPoints ||
       nextImprovement !== owned.interviewDetail.nextImprovement;
+    const nextReview = {
+      goodPoints: args.goodPoints === undefined
+        ? owned.interviewDetail.goodPoints
+        : normalizeOptionalText(args.goodPoints),
+      improvementPoints: args.improvementPoints === undefined
+        ? owned.interviewDetail.improvementPoints
+        : normalizeOptionalText(args.improvementPoints),
+      nextImprovement: args.nextImprovement === undefined
+        ? owned.interviewDetail.nextImprovement
+        : normalizeOptionalText(args.nextImprovement),
+      overallNote: args.overallNote === undefined
+        ? owned.interviewDetail.overallNote
+        : normalizeOptionalText(args.overallNote),
+    };
+    const becameMeaningfulReview =
+      !hasMeaningfulReview(owned.interviewDetail) && hasMeaningfulReview(nextReview);
 
     await ctx.db.patch(owned.interviewDetail._id, {
       ...fields,
@@ -295,6 +326,8 @@ export const update = mutation({
         sourceUpdatedAt: updatedAt,
       });
     }
+
+    return { becameMeaningfulReview };
   },
 });
 

@@ -13,6 +13,7 @@ import { eventToFormValues } from '@/components/events/eventFormatting';
 import { getStepTypeLabel } from '@/components/selection/selectionConstants';
 import { AppButton } from '@/components/ui/AppButton';
 import { AppInput } from '@/components/ui/AppInput';
+import { analytics } from '@/lib/analytics';
 import type {
   ApplicationEventTarget,
   IndependentCalendarEvent,
@@ -139,8 +140,18 @@ export function CalendarEventOverlay({
           selectionStepId: values.selectionStepId as Id<'selectionSteps'>,
           ...common,
         });
+        analytics.eventCreated({
+          event_kind: 'selection_step',
+          timing_type: values.timingType,
+          has_explicit_time: Boolean(values.time),
+        });
       } else {
         await createIndependent({ title: values.title, ...common });
+        analytics.eventCreated({
+          event_kind: 'independent',
+          timing_type: values.timingType,
+          has_explicit_time: Boolean(values.time),
+        });
       }
       onClose();
     } catch (error) {

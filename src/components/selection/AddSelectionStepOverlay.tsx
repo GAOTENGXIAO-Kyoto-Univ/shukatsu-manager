@@ -10,6 +10,7 @@ import type { Id } from '../../../convex/_generated/dataModel';
 import { AppButton } from '@/components/ui/AppButton';
 import { AppInput } from '@/components/ui/AppInput';
 import { ResponsiveOverlay } from '@/components/companies/ResponsiveOverlay';
+import { analytics } from '@/lib/analytics';
 import {
   selectionStepPresets,
   selectionStepTypeOptions,
@@ -59,6 +60,7 @@ export function AddSelectionStepOverlay({ applicationId, onClose, open }: AddSel
 
     try {
       await createStep({ applicationId, name, type });
+      analytics.selectionStepCreated({ step_type: type });
       close();
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : '添加失败，请重试');
@@ -70,6 +72,7 @@ export function AddSelectionStepOverlay({ applicationId, onClose, open }: AddSel
   async function submitCustom(values: CustomStepForm) {
     try {
       await createStep({ applicationId, name: values.name, type: values.type });
+      analytics.selectionStepCreated({ step_type: values.type });
       close();
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : '添加失败，请重试');

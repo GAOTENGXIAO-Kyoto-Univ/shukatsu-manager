@@ -10,6 +10,7 @@ import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { AppButton } from '@/components/ui/AppButton';
 import { AppInput } from '@/components/ui/AppInput';
+import { analytics } from '@/lib/analytics';
 
 import { normalizeSearch } from './filtering';
 import { ResponsiveOverlay } from './ResponsiveOverlay';
@@ -58,17 +59,18 @@ export function CreateApplicationOverlay({ onClose, open }: CreateApplicationOve
 
   async function submit(values: CreateApplicationForm) {
     try {
-      const applicationId = await createApplication({
+      const result = await createApplication({
         company: selectedCompanyId
           ? { kind: 'existing', companyId: selectedCompanyId }
           : { kind: 'new', name: values.companyName },
         jobTitle: values.jobTitle,
       });
+      analytics.applicationCreated({ company_reused: result.companyReused });
 
       reset();
       setSelectedCompanyId(null);
       onClose();
-      router.push(`/applications/${applicationId}` as Href);
+      router.push(`/applications/${result.applicationId}` as Href);
     } catch (error) {
       const message = error instanceof Error ? error.message : '';
       setError('root', {

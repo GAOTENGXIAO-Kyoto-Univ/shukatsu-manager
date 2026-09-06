@@ -272,6 +272,7 @@ export const create = mutation({
     }
 
     let companyId: Id<"companies">;
+    let companyReused = false;
 
     if (args.company.kind === "existing") {
       const existingCompany = await ctx.db.get(args.company.companyId);
@@ -281,6 +282,7 @@ export const create = mutation({
       }
 
       companyId = existingCompany._id;
+      companyReused = true;
     } else {
       const companyName = args.company.name.trim();
 
@@ -295,6 +297,7 @@ export const create = mutation({
 
       if (matchedCompany) {
         companyId = matchedCompany._id;
+        companyReused = true;
       } else {
         companyId = await ctx.db.insert("companies", {
           userId: user._id,
@@ -313,11 +316,13 @@ export const create = mutation({
       throw new Error(duplicateApplicationMessage);
     }
 
-    return await ctx.db.insert("applications", {
+    const applicationId = await ctx.db.insert("applications", {
       companyId,
       jobTitle,
       updatedAt: Date.now(),
     });
+
+    return { applicationId, companyReused };
   },
 });
 

@@ -10,6 +10,7 @@ import type { Id } from '../../../convex/_generated/dataModel';
 import { ResponsiveOverlay } from '@/components/companies/ResponsiveOverlay';
 import { AppButton } from '@/components/ui/AppButton';
 import { AppInput } from '@/components/ui/AppInput';
+import { analytics } from '@/lib/analytics';
 import type { InterviewDetailData, InterviewFormat } from './types';
 
 const positiveIntegerText = z.string().refine(
@@ -37,6 +38,7 @@ type InterviewDetailFormMode = 'info' | 'review';
 
 type InterviewDetailFormOverlayProps = {
   detail: InterviewDetailData | null;
+  hasQuestions: boolean;
   mode: InterviewDetailFormMode | null;
   onClose: () => void;
   selectionStepId: Id<'selectionSteps'>;
@@ -51,6 +53,7 @@ const formatOptions: { label: string; value: InterviewFormat }[] = [
 
 export function InterviewDetailFormOverlay({
   detail,
+  hasQuestions,
   mode,
   onClose,
   selectionStepId,
@@ -60,6 +63,7 @@ export function InterviewDetailFormOverlay({
   ) : (
     <InterviewReviewForm
       detail={detail}
+      hasQuestions={hasQuestions}
       onClose={onClose}
       open={mode === 'review'}
       selectionStepId={selectionStepId}
@@ -72,7 +76,7 @@ function InterviewInfoForm({
   onClose,
   open,
   selectionStepId,
-}: Omit<InterviewDetailFormOverlayProps, 'mode'> & { open: boolean }) {
+}: Omit<InterviewDetailFormOverlayProps, 'hasQuestions' | 'mode'> & { open: boolean }) {
   const createInterview = useMutation(api.interviews.create);
   const updateInterview = useMutation(api.interviews.update);
   const {
@@ -178,6 +182,7 @@ function InterviewInfoForm({
 
 function InterviewReviewForm({
   detail,
+  hasQuestions,
   onClose,
   open,
   selectionStepId,
@@ -215,10 +220,14 @@ function InterviewReviewForm({
     };
 
     try {
-      if (detail) {
-        await updateInterview({ interviewDetailId: detail.interviewDetailId, ...fields });
-      } else {
-        await createInterview({ selectionStepId, ...fields });
+      const result = detail
+        ? await updateInterview({ interviewDetailId: detail.interviewDetailId, ...fields })
+        : await createInterview({ selectionStepId, ...fields });
+      if (result.becameMeaningfulReview) {
+        analytics.interviewReviewSaved({
+          has_questions: hasQuestions,
+          has_improvement_points: Boolean(values.improvementPoints.trim()),
+        });
       }
       onClose();
     } catch {

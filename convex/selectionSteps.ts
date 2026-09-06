@@ -187,6 +187,11 @@ export const update = mutation({
       after: { completed, result },
       now,
     });
+
+    return {
+      completedBecameTrue: !owned.selectionStep.completed && completed,
+      resultChanged: result !== null && result !== owned.selectionStep.result,
+    };
   },
 });
 

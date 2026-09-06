@@ -10,6 +10,7 @@ import type { EventDetail } from '@/components/applications/types';
 import type { SelectionStepType } from '@/components/selection/selectionConstants';
 import { AppButton } from '@/components/ui/AppButton';
 import { AppInput } from '@/components/ui/AppInput';
+import { analytics } from '@/lib/analytics';
 import { eventToFormValues } from './eventFormatting';
 
 const eventFormSchema = z
@@ -88,6 +89,11 @@ export function EventForm({
         await updateEvent({ eventId: event.eventId, ...fields });
       } else {
         await createEvent({ selectionStepId, ...fields });
+        analytics.eventCreated({
+          event_kind: 'selection_step',
+          timing_type: values.timingType,
+          has_explicit_time: Boolean(values.time),
+        });
       }
       onSaved();
     } catch {

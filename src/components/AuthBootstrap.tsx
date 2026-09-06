@@ -1,9 +1,11 @@
 import { api } from '../../convex/_generated/api';
+import { useAuth } from '@clerk/expo';
 import { useMutation } from 'convex/react';
 import { ReactNode, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AccountMenu } from './AccountMenu';
+import { analytics } from '@/lib/analytics';
 
 type BootstrapState = 'loading' | 'ready' | 'error';
 
@@ -12,6 +14,7 @@ type AuthBootstrapProps = {
 };
 
 export function AuthBootstrap({ children }: AuthBootstrapProps) {
+  const { userId } = useAuth();
   const ensureCurrentUser = useMutation(api.users.ensureCurrentUser);
   const [state, setState] = useState<BootstrapState>('loading');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -25,7 +28,9 @@ export function AuthBootstrap({ children }: AuthBootstrapProps) {
       setErrorMessage(null);
 
       try {
-        await ensureCurrentUser({});
+        if (userId) analytics.identify(userId);
+        const result = await ensureCurrentUser({});
+        if (result.wasCreated) analytics.userSignedUp();
 
         if (isCurrent) {
           setState('ready');
@@ -43,7 +48,7 @@ export function AuthBootstrap({ children }: AuthBootstrapProps) {
     return () => {
       isCurrent = false;
     };
-  }, [ensureCurrentUser, retryCount]);
+  }, [ensureCurrentUser, retryCount, userId]);
 
   if (state === 'ready') {
     return <>{children}</>;

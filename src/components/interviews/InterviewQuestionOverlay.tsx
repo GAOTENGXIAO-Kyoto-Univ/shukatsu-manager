@@ -9,6 +9,7 @@ import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { ResponsiveOverlay } from '@/components/companies/ResponsiveOverlay';
 import { AppButton } from '@/components/ui/AppButton';
+import { analytics } from '@/lib/analytics';
 import type { InterviewEvaluation, InterviewQuestionData } from './types';
 
 const questionSchema = z.object({
@@ -70,6 +71,14 @@ export function InterviewQuestionOverlay({
         await updateQuestion({ interviewQuestionId: item.interviewQuestionId, ...fields });
       } else {
         await createQuestion({ selectionStepId, ...fields });
+        analytics.interviewQuestionCreated({
+          has_answer: Boolean(values.answer.trim()),
+          evaluation: values.evaluation || 'unset',
+        });
+        analytics.knowledgeItemCreated({
+          category: 'qa',
+          creation_source: 'interview_auto_deposit',
+        });
       }
       onClose();
     } catch {

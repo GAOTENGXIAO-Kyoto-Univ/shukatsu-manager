@@ -1,13 +1,24 @@
-import { ArrowRight, Plus, Sparkles } from '@tamagui/lucide-icons-2';
+import {
+  ArrowRight,
+  ChevronRight,
+  CircleAlert,
+  CircleHelp,
+  Library,
+  MessageCircleQuestion,
+  MessageSquareWarning,
+  Plus,
+  Sparkles,
+} from '@tamagui/lucide-icons-2';
 import { useAction, useMutation, useQuery_experimental as useQuery } from 'convex/react';
 import { Href, Link } from 'expo-router';
-import { useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { Text, TextArea, XStack, YStack, useMedia } from 'tamagui';
 
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
+import { analytics } from '@/lib/analytics';
 import { AppButton } from '@/components/ui/AppButton';
-import { LoadingState, MessageState } from '@/components/ui/States';
+import { MessageState } from '@/components/ui/States';
 import { KnowledgeItemOverlay } from './KnowledgeItemOverlay';
 import { KnowledgePage } from './KnowledgeLayout';
 
@@ -34,48 +45,212 @@ export function KnowledgeHomeScreen() {
 
       <AnswerGenerator />
 
-      {overview.status === 'pending' ? <LoadingState message="正在整理知识库..." /> : null}
-      {overview.status === 'error' ? <MessageState message="知识库读取失败" actionLabel="重试" onAction={() => window.location.reload()} /> : null}
+      {overview.status === 'pending' ? <KnowledgeOverviewSkeleton isDesktop={isDesktop} /> : null}
+      {overview.status === 'error' ? (
+        <YStack
+          bg="$surface"
+          borderColor="$border"
+          borderWidth={1}
+          style={{ borderRadius: 16, overflow: 'hidden' }}
+        >
+          <MessageState
+            message="知识库读取失败"
+            actionLabel="重试"
+            onAction={() => window.location.reload()}
+          />
+        </YStack>
+      ) : null}
       {overview.status === 'success' ? (
-        <XStack gap="$xl" flexWrap="wrap" style={{ alignItems: 'flex-start' }}>
-          <OverviewSection title="近期需要改善" href={'/knowledge/weaknesses' as Href} width={isDesktop ? '48%' : '100%'} empty="还没有可汇总的弱点">
-            {overview.data.topWeaknesses.map((item) => (
-              <OverviewLink key={item.weaknessGroupId} href={`/knowledge/weaknesses/${item.weaknessGroupId}` as Href} title={item.title} lines={[`在 ${item.interviewCount} 场面试中出现`, `最近一次：${item.latestCompanyName}`]} />
-            ))}
-          </OverviewSection>
-          <OverviewSection title="高频面试问题" href={'/knowledge/frequent' as Href} width={isDesktop ? '48%' : '100%'} empty="还没有出现两次以上的问题">
-            {overview.data.topFrequentQuestions.map((item) => (
-              <OverviewLink key={item.questionGroupId} href={`/knowledge/frequent/${item.questionGroupId}` as Href} title={item.title} lines={[`被问 ${item.questionCount} 次 · 来自 ${item.distinctCompanyCount} 家公司`, `最近一次：${item.latestCompanyName}`]} />
-            ))}
-          </OverviewSection>
-          <OverviewSection title="经常回答不好" href={'/knowledge/weak-answers' as Href} width={isDesktop ? '48%' : '100%'} empty="还没有两次以上的「需要改进」评价">
-            {overview.data.topWeakAnswers.map((item) => (
-              <OverviewLink key={item.questionGroupId} href={`/knowledge/weak-answers/${item.questionGroupId}` as Href} title={item.title} lines={[`评价为「需要改进」：${item.poorCount} 次`, `已评价：${item.evaluatedCount} 次 · 表现不佳率：${Math.round(item.poorRate * 100)}%`]} />
-            ))}
-          </OverviewSection>
-          <OverviewSection
-            title="我的知识"
-            href={'/knowledge/items' as Href}
-            width={isDesktop ? '48%' : '100%'}
-            empty="还没有知识内容"
-            action={<AppButton variant="ghost" icon={<Plus size={16} />} onPress={() => setCreateCategory('general')}>添加知识</AppButton>}
+        <YStack gap="$lg">
+          <KnowledgeGroup
+            isDesktop={isDesktop}
+            title="系统帮我总结"
+            subtitle="根据你的面试记录自动整理值得关注的重点"
           >
-            {overview.data.recentKnowledgeItems.map((item) => (
-              <OverviewLink key={item.knowledgeItemId} href={`/knowledge/items?item=${item.knowledgeItemId}` as Href} title={item.title} lines={[item.category === 'qa' ? '问题回答' : '可用素材']} />
-            ))}
-          </OverviewSection>
-          <OverviewSection
-            title="逆質問"
-            href={'/knowledge/reverse-questions' as Href}
-            width="100%"
-            empty="还没有逆質問"
-            action={<AppButton variant="ghost" icon={<Plus size={16} />} onPress={() => setCreateCategory('reverse')}>添加逆質問</AppButton>}
+            <KnowledgeModule
+              href={'/knowledge/weaknesses' as Href}
+              icon={<CircleAlert color="$danger" size={20} />}
+              softTone="$dangerSoft"
+              title="近期需要改善"
+              width="100%"
+            >
+              {overview.data.topWeaknesses.length > 0 ? (
+                overview.data.topWeaknesses.map((item, index) => (
+                  <KnowledgeSummaryRow
+                    key={item.weaknessGroupId}
+                    href={`/knowledge/weaknesses/${item.weaknessGroupId}` as Href}
+                    last={index === overview.data.topWeaknesses.length - 1}
+                    lines={[
+                      `在 ${item.interviewCount} 场面试中出现`,
+                      `最近一次：${item.latestCompanyName}`,
+                    ]}
+                    title={item.title}
+                  />
+                ))
+              ) : (
+                <KnowledgeEmpty
+                  icon={<CircleAlert color="$danger" size={19} />}
+                  softTone="$dangerSoft"
+                  message="还没有可汇总的面试弱点"
+                />
+              )}
+            </KnowledgeModule>
+
+            <XStack
+              gap="$base"
+              style={{ alignItems: 'flex-start', flexDirection: isDesktop ? 'row' : 'column' }}
+            >
+              <KnowledgeModule
+                flexValue={isDesktop ? 1 : undefined}
+                href={'/knowledge/frequent' as Href}
+                icon={<MessageCircleQuestion color="$infoStrong" size={20} />}
+                softTone="$infoSoft"
+                title="高频面试问题"
+                width={isDesktop ? undefined : '100%'}
+              >
+                {overview.data.topFrequentQuestions.length > 0 ? (
+                  overview.data.topFrequentQuestions.map((item, index) => (
+                    <KnowledgeSummaryRow
+                      key={item.questionGroupId}
+                      href={`/knowledge/frequent/${item.questionGroupId}` as Href}
+                      last={index === overview.data.topFrequentQuestions.length - 1}
+                      lines={[
+                        `被问 ${item.questionCount} 次 · 来自 ${item.distinctCompanyCount} 家公司`,
+                        `最近一次：${item.latestCompanyName}`,
+                      ]}
+                      title={item.title}
+                    />
+                  ))
+                ) : (
+                  <KnowledgeEmpty
+                    icon={<MessageCircleQuestion color="$infoStrong" size={19} />}
+                    softTone="$infoSoft"
+                    message="还没有重复出现的面试问题"
+                  />
+                )}
+              </KnowledgeModule>
+
+              <KnowledgeModule
+                flexValue={isDesktop ? 1 : undefined}
+                href={'/knowledge/weak-answers' as Href}
+                icon={<MessageSquareWarning color="$warningStrong" size={20} />}
+                softTone="$warningSoft"
+                title="经常回答不好"
+                width={isDesktop ? undefined : '100%'}
+              >
+                {overview.data.topWeakAnswers.length > 0 ? (
+                  overview.data.topWeakAnswers.map((item, index) => (
+                    <KnowledgeSummaryRow
+                      key={item.questionGroupId}
+                      href={`/knowledge/weak-answers/${item.questionGroupId}` as Href}
+                      last={index === overview.data.topWeakAnswers.length - 1}
+                      lines={[
+                        `评价为「需要改进」：${item.poorCount} 次`,
+                        `已评价：${item.evaluatedCount} 次 · 表现不佳率：${Math.round(item.poorRate * 100)}%`,
+                      ]}
+                      title={item.title}
+                    />
+                  ))
+                ) : (
+                  <KnowledgeEmpty
+                    icon={<MessageSquareWarning color="$warningStrong" size={19} />}
+                    softTone="$warningSoft"
+                    message="暂时没有反复出现的「需要改进」问题"
+                  />
+                )}
+              </KnowledgeModule>
+            </XStack>
+          </KnowledgeGroup>
+
+          <KnowledgeGroup
+            isDesktop={isDesktop}
+            title="我的个人资产"
+            subtitle="积累可以反复使用的回答与提问素材"
           >
-            {overview.data.recentReverseQuestions.map((item) => (
-              <OverviewLink key={item.knowledgeItemId} href={'/knowledge/reverse-questions' as Href} title={item.title} lines={item.content ? [item.content] : []} />
-            ))}
-          </OverviewSection>
-        </XStack>
+            <XStack
+              gap="$base"
+              style={{ alignItems: 'flex-start', flexDirection: isDesktop ? 'row' : 'column' }}
+            >
+              <KnowledgeModule
+                action={(
+                  <AppButton
+                    icon={<Plus size={15} />}
+                    minH={36}
+                    px="$sm"
+                    variant="ghost"
+                    onPress={() => setCreateCategory('general')}
+                  >
+                    添加知识
+                  </AppButton>
+                )}
+                flexValue={isDesktop ? 1.25 : undefined}
+                href={'/knowledge/items' as Href}
+                icon={<Library color="$successStrong" size={20} />}
+                softTone="$successSoft"
+                title="我的知识"
+                width={isDesktop ? undefined : '100%'}
+              >
+                {overview.data.recentKnowledgeItems.length > 0 ? (
+                  overview.data.recentKnowledgeItems.map((item, index) => (
+                    <KnowledgeItemRow
+                      key={item.knowledgeItemId}
+                      category={item.category === 'qa' ? '问题回答' : '可用素材'}
+                      href={`/knowledge/items?item=${item.knowledgeItemId}` as Href}
+                      last={index === overview.data.recentKnowledgeItems.length - 1}
+                      title={item.title}
+                    />
+                  ))
+                ) : (
+                  <KnowledgeEmpty
+                    action={<AppButton onPress={() => setCreateCategory('general')}>添加知识</AppButton>}
+                    icon={<Library color="$successStrong" size={19} />}
+                    softTone="$successSoft"
+                    message="还没有知识内容"
+                  />
+                )}
+              </KnowledgeModule>
+
+              <KnowledgeModule
+                action={(
+                  <AppButton
+                    icon={<Plus size={15} />}
+                    minH={36}
+                    px="$sm"
+                    variant="ghost"
+                    onPress={() => setCreateCategory('reverse')}
+                  >
+                    添加逆質問
+                  </AppButton>
+                )}
+                flexValue={isDesktop ? 1 : undefined}
+                href={'/knowledge/reverse-questions' as Href}
+                icon={<CircleHelp color="$accentStrong" size={20} />}
+                softTone="$accentSoft"
+                title="逆質問"
+                width={isDesktop ? undefined : '100%'}
+              >
+                {overview.data.recentReverseQuestions.length > 0 ? (
+                  overview.data.recentReverseQuestions.map((item, index) => (
+                    <KnowledgeSummaryRow
+                      key={item.knowledgeItemId}
+                      href={'/knowledge/reverse-questions' as Href}
+                      last={index === overview.data.recentReverseQuestions.length - 1}
+                      lines={item.content ? [item.content] : []}
+                      title={item.title}
+                    />
+                  ))
+                ) : (
+                  <KnowledgeEmpty
+                    action={<AppButton onPress={() => setCreateCategory('reverse')}>添加逆質問</AppButton>}
+                    icon={<CircleHelp color="$accentStrong" size={19} />}
+                    softTone="$accentSoft"
+                    message="还没有准备逆質問"
+                  />
+                )}
+              </KnowledgeModule>
+            </XStack>
+          </KnowledgeGroup>
+        </YStack>
       ) : null}
 
       <KnowledgeItemOverlay
@@ -110,6 +285,7 @@ function AnswerGenerator() {
       }
       setDraft(result.draft);
       setReferences(result.references);
+      analytics.aiAnswerGenerated({ used_reference_count: result.references.length });
     } catch {
       setMessage('生成失败，请重试；现有草稿已保留。');
     } finally {
@@ -123,6 +299,10 @@ function AnswerGenerator() {
     setMessage(null);
     try {
       await createItem({ category: 'qa', title: question, content: draft, note: null });
+      analytics.knowledgeItemCreated({
+        category: 'qa',
+        creation_source: 'ai_generated_saved',
+      });
       setMessage('已保存为独立的问题回答。');
     } catch {
       setMessage('保存失败，请重试。');
@@ -154,24 +334,367 @@ function AnswerGenerator() {
   );
 }
 
-function OverviewSection({ action, children, empty, href, title, width }: { action?: React.ReactNode; children: React.ReactNode; empty: string; href: Href; title: string; width: '48%' | '100%' }) {
-  const hasChildren = Array.isArray(children) ? children.length > 0 : Boolean(children);
+type KnowledgeSoftTone =
+  | '$accentSoft'
+  | '$dangerSoft'
+  | '$infoSoft'
+  | '$successSoft'
+  | '$warningSoft';
+
+function KnowledgeGroup({
+  children,
+  isDesktop,
+  subtitle,
+  title,
+}: {
+  children: ReactNode;
+  isDesktop: boolean;
+  subtitle: string;
+  title: string;
+}) {
   return (
-    <YStack gap="$base" width={width} style={{ minWidth: 0 }}>
-      <XStack gap="$sm" style={{ alignItems: 'center', justifyContent: 'space-between' }}><Text color="$text" fontSize={21} fontWeight="600">{title}</Text>{action}</XStack>
-      <YStack borderTopColor="$border" borderTopWidth={1}>{hasChildren ? children : <Text color="$textMuted" py="$lg">{empty}</Text>}</YStack>
-      <Link href={href} asChild><Text color="$accentStrong" cursor="pointer" fontSize={14} fontWeight="600">查看全部</Text></Link>
+    <YStack
+      bg="$surface"
+      borderColor="$border"
+      borderWidth={1}
+      gap="$lg"
+      p={isDesktop ? '$lg' : '$base'}
+      style={{ borderRadius: 16 }}
+    >
+      <YStack gap="$xs">
+        <Text color="$text" fontSize={isDesktop ? 20 : 19} fontWeight="600" lineHeight={26}>
+          {title}
+        </Text>
+        <Text color="$textSecondary" fontSize={isDesktop ? 14 : 13} lineHeight={19}>
+          {subtitle}
+        </Text>
+      </YStack>
+      {children}
     </YStack>
   );
 }
 
-function OverviewLink({ href, lines, title }: { href: Href; lines: string[]; title: string }) {
+function KnowledgeModule({
+  action,
+  children,
+  flexValue,
+  href,
+  icon,
+  softTone,
+  title,
+  width,
+}: {
+  action?: ReactNode;
+  children: ReactNode;
+  flexValue?: number;
+  href: Href;
+  icon: ReactNode;
+  softTone: KnowledgeSoftTone;
+  title: string;
+  width?: '100%';
+}) {
+  return (
+    <YStack
+      bg="$surface"
+      borderColor="$border"
+      borderWidth={1}
+      width={width}
+      style={{ borderRadius: 14, flex: flexValue, minWidth: 0, overflow: 'hidden' }}
+    >
+      <XStack
+        bg={softTone}
+        flexWrap="wrap"
+        gap="$sm"
+        p="$base"
+        style={{ alignItems: 'center', justifyContent: 'space-between' }}
+      >
+        <XStack flex={1} gap="$md" style={{ alignItems: 'center', minWidth: 150 }}>
+          <YStack
+            bg="$surface"
+            height={36}
+            width={36}
+            style={{ alignItems: 'center', borderRadius: 9999, justifyContent: 'center' }}
+          >
+            {icon}
+          </YStack>
+          <Text
+            color="$text"
+            flex={1}
+            fontSize={18}
+            fontWeight="600"
+            lineHeight={23}
+            numberOfLines={2}
+            style={{ minWidth: 0 }}
+          >
+            {title}
+          </Text>
+        </XStack>
+        <XStack flexWrap="wrap" gap="$xs" style={{ alignItems: 'center' }}>
+          {action}
+          <ViewAllLink href={href} />
+        </XStack>
+      </XStack>
+      <YStack borderTopColor="$border" borderTopWidth={1}>
+        {children}
+      </YStack>
+    </YStack>
+  );
+}
+
+function ViewAllLink({ href }: { href: Href }) {
   return (
     <Link href={href} asChild>
-      <XStack borderBottomColor="$border" borderBottomWidth={1} cursor="pointer" gap="$sm" py="$base" style={{ alignItems: 'center', justifyContent: 'space-between' }}>
-        <YStack flex={1} gap="$xs" style={{ minWidth: 0 }}><Text color="$text" fontWeight="600">{title}</Text>{lines.map((line, index) => <Text key={`${line}-${index}`} color={index === 0 ? '$textSecondary' : '$textMuted'} fontSize={index === 0 ? 14 : 12} numberOfLines={2}>{line}</Text>)}</YStack>
-        <ArrowRight color="$textMuted" size={17} />
+      <XStack
+        cursor="pointer"
+        gap="$xs"
+        minH={36}
+        px="$xs"
+        pressStyle={{ opacity: 0.72 }}
+        hoverStyle={{ opacity: 0.72 }}
+        focusStyle={{
+          outlineColor: '$focusRing',
+          outlineStyle: 'solid',
+          outlineWidth: 2,
+        }}
+        style={{ alignItems: 'center', borderRadius: 8 }}
+      >
+        <Text color="$textSecondary" fontSize={13} fontWeight="600">
+          查看全部
+        </Text>
+        <ArrowRight color="$textMuted" size={15} />
       </XStack>
     </Link>
+  );
+}
+
+function KnowledgeSummaryRow({
+  badge,
+  href,
+  last,
+  lines,
+  title,
+}: {
+  badge?: string;
+  href: Href;
+  last: boolean;
+  lines: string[];
+  title: string;
+}) {
+  return (
+    <Link href={href} asChild>
+      <XStack
+        borderBottomColor="$border"
+        borderBottomWidth={last ? 0 : 1}
+        cursor="pointer"
+        gap="$md"
+        px="$base"
+        py="$md"
+        pressStyle={{ opacity: 0.74 }}
+        hoverStyle={{ background: '$surfaceMuted' }}
+        focusStyle={{
+          outlineColor: '$focusRing',
+          outlineStyle: 'solid',
+          outlineWidth: 2,
+        }}
+        style={{ alignItems: 'center' }}
+      >
+        <YStack flex={1} gap="$xs" style={{ minWidth: 0 }}>
+          <Text
+            color="$text"
+            fontSize={15}
+            fontWeight="600"
+            lineHeight={21}
+            numberOfLines={2}
+            style={{ overflowWrap: 'anywhere' }}
+          >
+            {title}
+          </Text>
+          {badge ? (
+            <XStack
+              bg="$successSoft"
+              px="$sm"
+              py={2}
+              style={{ alignSelf: 'flex-start', borderRadius: 9999 }}
+            >
+              <Text color="$successStrong" fontSize={12} fontWeight="600">
+                {badge}
+              </Text>
+            </XStack>
+          ) : null}
+          {lines.map((line, index) => (
+            <Text
+              key={`${line}-${index}`}
+              color={index === 0 ? '$textSecondary' : '$textMuted'}
+              fontSize={index === 0 ? 13 : 12}
+              lineHeight={18}
+              numberOfLines={2}
+            >
+              {line}
+            </Text>
+          ))}
+        </YStack>
+        <ChevronRight color="$textMuted" size={16} />
+      </XStack>
+    </Link>
+  );
+}
+
+function KnowledgeItemRow({
+  category,
+  href,
+  last,
+  title,
+}: {
+  category: string;
+  href: Href;
+  last: boolean;
+  title: string;
+}) {
+  return (
+    <KnowledgeSummaryRow
+      badge={category}
+      href={href}
+      last={last}
+      lines={[]}
+      title={title}
+    />
+  );
+}
+
+function KnowledgeEmpty({
+  action,
+  icon,
+  message,
+  softTone,
+}: {
+  action?: ReactNode;
+  icon: ReactNode;
+  message: string;
+  softTone: KnowledgeSoftTone;
+}) {
+  return (
+    <YStack gap="$md" p="$lg" style={{ alignItems: 'center' }}>
+      <YStack
+        bg={softTone}
+        height={38}
+        width={38}
+        style={{ alignItems: 'center', borderRadius: 9999, justifyContent: 'center' }}
+      >
+        {icon}
+      </YStack>
+      <Text color="$textSecondary" fontSize={14} lineHeight={20} style={{ textAlign: 'center' }}>
+        {message}
+      </Text>
+      {action}
+    </YStack>
+  );
+}
+
+function KnowledgeOverviewSkeleton({ isDesktop }: { isDesktop: boolean }) {
+  return (
+    <YStack gap="$lg">
+      <KnowledgeGroup
+        isDesktop={isDesktop}
+        title="系统帮我总结"
+        subtitle="根据你的面试记录自动整理值得关注的重点"
+      >
+        <KnowledgeModuleSkeleton rows={3} width="100%" />
+        <XStack
+          gap="$base"
+          style={{ alignItems: 'flex-start', flexDirection: isDesktop ? 'row' : 'column' }}
+        >
+          <KnowledgeModuleSkeleton
+            flexValue={isDesktop ? 1 : undefined}
+            rows={3}
+            width={isDesktop ? undefined : '100%'}
+          />
+          <KnowledgeModuleSkeleton
+            flexValue={isDesktop ? 1 : undefined}
+            rows={2}
+            width={isDesktop ? undefined : '100%'}
+          />
+        </XStack>
+      </KnowledgeGroup>
+      <KnowledgeGroup
+        isDesktop={isDesktop}
+        title="我的个人资产"
+        subtitle="积累可以反复使用的回答与提问素材"
+      >
+        <XStack
+          gap="$base"
+          style={{ alignItems: 'flex-start', flexDirection: isDesktop ? 'row' : 'column' }}
+        >
+          <KnowledgeModuleSkeleton
+            flexValue={isDesktop ? 1.25 : undefined}
+            rows={4}
+            width={isDesktop ? undefined : '100%'}
+          />
+          <KnowledgeModuleSkeleton
+            flexValue={isDesktop ? 1 : undefined}
+            rows={3}
+            width={isDesktop ? undefined : '100%'}
+          />
+        </XStack>
+      </KnowledgeGroup>
+    </YStack>
+  );
+}
+
+function KnowledgeModuleSkeleton({
+  flexValue,
+  rows,
+  width,
+}: {
+  flexValue?: number;
+  rows: number;
+  width?: '100%';
+}) {
+  return (
+    <YStack
+      bg="$surface"
+      borderColor="$border"
+      borderWidth={1}
+      width={width}
+      style={{ borderRadius: 14, flex: flexValue, minWidth: 0, overflow: 'hidden' }}
+    >
+      <XStack bg="$surfaceMuted" gap="$md" p="$base" style={{ alignItems: 'center' }}>
+        <SkeletonBlock height={36} radius={9999} width={36} />
+        <SkeletonBlock height={18} width="38%" />
+      </XStack>
+      <YStack borderTopColor="$border" borderTopWidth={1}>
+        {Array.from({ length: rows }, (_, index) => (
+          <YStack
+            key={index}
+            borderBottomColor="$border"
+            borderBottomWidth={index === rows - 1 ? 0 : 1}
+            gap="$sm"
+            px="$base"
+            py="$md"
+          >
+            <SkeletonBlock height={15} width={index % 2 === 0 ? '68%' : '54%'} />
+            <SkeletonBlock height={12} width={index % 2 === 0 ? '44%' : '58%'} />
+          </YStack>
+        ))}
+      </YStack>
+    </YStack>
+  );
+}
+
+function SkeletonBlock({
+  height,
+  radius = 7,
+  width,
+}: {
+  height: number;
+  radius?: number;
+  width: number | `${number}%`;
+}) {
+  return (
+    <YStack
+      bg="$surfaceMuted"
+      height={height}
+      width={width}
+      style={{ borderRadius: radius }}
+    />
   );
 }

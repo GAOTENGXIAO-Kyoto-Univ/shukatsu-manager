@@ -190,7 +190,7 @@ function InterviewWorkspace({ data }: { data: InterviewPageData }) {
         </YStack>
       </ScrollView>
 
-      <InterviewDetailFormOverlay detail={data.interviewDetail} mode={detailFormMode} onClose={() => setDetailFormMode(null)} selectionStepId={data.selectionStep.selectionStepId} />
+      <InterviewDetailFormOverlay detail={data.interviewDetail} hasQuestions={data.questions.length > 0} mode={detailFormMode} onClose={() => setDetailFormMode(null)} selectionStepId={data.selectionStep.selectionStepId} />
       <InterviewQuestionOverlay item={editingQuestion} onClose={() => { setQuestionEditorOpen(false); setEditingQuestion(null); }} open={questionEditorOpen} selectionStepId={data.selectionStep.selectionStepId} />
 
       <ResponsiveOverlay desktopPresentation="popover" onClose={() => setPageMenuOpen(false)} open={pageMenuOpen} title="面试记录操作" width={320}>

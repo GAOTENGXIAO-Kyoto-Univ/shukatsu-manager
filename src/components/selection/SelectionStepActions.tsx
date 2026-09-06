@@ -12,6 +12,7 @@ import { api } from '../../../convex/_generated/api';
 import { warmPaperColors } from '../../../tamagui.config';
 import { AppButton } from '@/components/ui/AppButton';
 import { AppInput } from '@/components/ui/AppInput';
+import { analytics } from '@/lib/analytics';
 import { ResponsiveOverlay } from '@/components/companies/ResponsiveOverlay';
 import type { SelectionStepDetail } from '@/components/applications/types';
 import { EventForm } from '@/components/events/EventForm';
@@ -268,10 +269,13 @@ export function SelectionStepActions({
                 disabled={busy}
                 onPress={() =>
                   void mutate('completed', async () => {
-                    await updateStep({
+                    const transition = await updateStep({
                       selectionStepId: activeStep.selectionStepId,
                       completed: !activeStep.completed,
                     });
+                    if (transition.completedBecameTrue) {
+                      analytics.selectionStepCompleted({ step_type: activeStep.type });
+                    }
                   })
                 }
               >
@@ -298,10 +302,16 @@ export function SelectionStepActions({
                       disabled={busy}
                       onPress={() =>
                         void mutate('result', async () => {
-                          await updateStep({
+                          const transition = await updateStep({
                             selectionStepId: activeStep.selectionStepId,
                             result: option.value,
                           });
+                          if (option.value && transition.resultChanged) {
+                            analytics.selectionStepResultSet({
+                              result: option.value,
+                              step_type: activeStep.type,
+                            });
+                          }
                         })
                       }
                     >

@@ -5,6 +5,7 @@ import { Stack } from 'expo-router';
 import { TamaguiProvider } from 'tamagui';
 
 import tamaguiConfig from '../../tamagui.config';
+import { AnalyticsLifecycle } from '@/components/analytics/AnalyticsLifecycle';
 
 function requireEnv(value: string | undefined, name: string) {
   if (!value) {
@@ -29,6 +30,7 @@ export default function RootLayout() {
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
     >
+      <AnalyticsLifecycle />
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
         <TamaguiProvider config={tamaguiConfig} defaultTheme="light">
           <Stack screenOptions={{ headerShown: false }}>

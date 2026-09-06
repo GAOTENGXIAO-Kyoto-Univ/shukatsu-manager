@@ -77,13 +77,15 @@ export const ensureCurrentUser = mutation({
       .unique();
 
     if (existingUser) {
-      return existingUser._id;
+      return { userId: existingUser._id, wasCreated: false };
     }
 
-    return await ctx.db.insert("users", {
+    const userId = await ctx.db.insert("users", {
       authUserId: identity.subject,
       displayName: identity.name ?? undefined,
       updatedAt: Date.now(),
     });
+
+    return { userId, wasCreated: true };
   },
 });

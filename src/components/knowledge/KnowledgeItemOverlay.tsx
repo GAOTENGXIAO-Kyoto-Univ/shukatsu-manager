@@ -10,6 +10,7 @@ import { api } from '../../../convex/_generated/api';
 import { ResponsiveOverlay } from '@/components/companies/ResponsiveOverlay';
 import { AppButton } from '@/components/ui/AppButton';
 import { AppInput } from '@/components/ui/AppInput';
+import { analytics } from '@/lib/analytics';
 import type { KnowledgeCategory, KnowledgeItemData } from './types';
 
 const formSchema = z.object({
@@ -79,6 +80,10 @@ export function KnowledgeItemOverlay({
         await updateItem({ knowledgeItemId: item.knowledgeItemId, ...payload });
       } else {
         await createItem(payload);
+        analytics.knowledgeItemCreated({
+          category: payload.category,
+          creation_source: 'manual',
+        });
       }
       setErrorMessage(null);
       onClose();

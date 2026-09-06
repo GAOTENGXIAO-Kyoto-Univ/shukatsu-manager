@@ -3,6 +3,7 @@ import {
   AuthLoadingState,
   ConvexAuthErrorState,
 } from '@/components/AuthBootstrap';
+import { SensitiveReplayMask } from '@/components/analytics/SensitiveReplayMask';
 import { AppShell } from '@/components/navigation/AppShell';
 import { useAuth } from '@clerk/expo';
 import { useConvexAuth } from 'convex/react';
@@ -27,24 +28,26 @@ export default function TabLayout() {
   return (
     <AuthBootstrap>
       <AppShell>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="companies" />
-          <Stack.Screen name="applications/[applicationId]" />
-          <Stack.Screen name="applications/[applicationId]/research" />
-          <Stack.Screen name="applications/[applicationId]/interviews/[selectionStepId]" />
-          <Stack.Screen name="calendar" />
-          <Stack.Screen name="knowledge" />
-          <Stack.Screen name="knowledge/items" />
-          <Stack.Screen name="knowledge/frequent" />
-          <Stack.Screen name="knowledge/frequent/[questionGroupId]" />
-          <Stack.Screen name="knowledge/weak-answers" />
-          <Stack.Screen name="knowledge/weak-answers/[questionGroupId]" />
-          <Stack.Screen name="knowledge/weaknesses" />
-          <Stack.Screen name="knowledge/weaknesses/[weaknessGroupId]" />
-          <Stack.Screen name="knowledge/reverse-questions" />
-          <Stack.Screen name="profile" />
-        </Stack>
+        <SensitiveReplayMask>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="companies" />
+            <Stack.Screen name="applications/[applicationId]" />
+            <Stack.Screen name="applications/[applicationId]/research" />
+            <Stack.Screen name="applications/[applicationId]/interviews/[selectionStepId]" />
+            <Stack.Screen name="calendar" />
+            <Stack.Screen name="knowledge" />
+            <Stack.Screen name="knowledge/items" />
+            <Stack.Screen name="knowledge/frequent" />
+            <Stack.Screen name="knowledge/frequent/[questionGroupId]" />
+            <Stack.Screen name="knowledge/weak-answers" />
+            <Stack.Screen name="knowledge/weak-answers/[questionGroupId]" />
+            <Stack.Screen name="knowledge/weaknesses" />
+            <Stack.Screen name="knowledge/weaknesses/[weaknessGroupId]" />
+            <Stack.Screen name="knowledge/reverse-questions" />
+            <Stack.Screen name="profile" />
+          </Stack>
+        </SensitiveReplayMask>
       </AppShell>
     </AuthBootstrap>
   );
