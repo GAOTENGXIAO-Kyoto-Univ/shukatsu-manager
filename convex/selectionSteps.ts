@@ -23,12 +23,18 @@ import {
   deleteSelectionProgressHistory,
   recordSelectionProgressTransition,
 } from "./lib/selectionProgressHistory";
+import {
+  isPresetTypeCompatible,
+  selectionStepPresetKeyValidator,
+  shouldClearSelectionStepPreset,
+} from "./lib/selectionPresets";
 
 function toStepDto(step: Doc<"selectionSteps">, event: Doc<"events"> | null, now: number) {
   return {
     selectionStepId: step._id,
     applicationId: step.applicationId,
     name: step.name,
+    presetKey: step.presetKey,
     type: step.type,
     order: step.order,
     completed: step.completed,
@@ -81,6 +87,7 @@ export const create = mutation({
     applicationId: v.id("applications"),
     name: v.string(),
     type: selectionStepTypeValidator,
+    presetKey: v.optional(selectionStepPresetKeyValidator),
   },
   handler: async (ctx, args) => {
     const owned = await getOwnedApplication(ctx, args.applicationId);
@@ -95,12 +102,17 @@ export const create = mutation({
       throw new Error("步骤名称不能为空");
     }
 
+    if (args.presetKey && !isPresetTypeCompatible(args.presetKey, args.type)) {
+      throw new Error("选考步骤预设与类型不匹配");
+    }
+
     const steps = await listSelectionStepsForApplication(ctx, owned.application._id);
     const lastOrder = steps.length > 0 ? Math.max(...steps.map((step) => step.order)) : -1;
 
     return await ctx.db.insert("selectionSteps", {
       applicationId: owned.application._id,
       name,
+      ...(args.presetKey ? { presetKey: args.presetKey } : {}),
       type: args.type,
       order: lastOrder + 1,
       completed: false,
@@ -127,9 +139,10 @@ export const update = mutation({
     }
 
     const now = Date.now();
-    const patch: Partial<Pick<Doc<"selectionSteps">, "name" | "type" | "completed" | "result" | "updatedAt">> = {
+    const patch: Partial<Pick<Doc<"selectionSteps">, "name" | "presetKey" | "type" | "completed" | "result" | "updatedAt">> = {
       updatedAt: now,
     };
+    const identityChanged = shouldClearSelectionStepPreset(owned.selectionStep, args);
 
     if (args.name !== undefined) {
       const name = args.name.trim();
@@ -162,6 +175,10 @@ export const update = mutation({
       }
 
       patch.type = args.type;
+    }
+
+    if (identityChanged) {
+      patch.presetKey = undefined;
     }
 
     let completed = args.completed ?? owned.selectionStep.completed;

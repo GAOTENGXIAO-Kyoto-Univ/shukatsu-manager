@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery } from 'convex/react';
 import { useRouter, Href } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { Text, XStack, YStack } from 'tamagui';
 import { z } from 'zod';
@@ -16,8 +17,8 @@ import { normalizeSearch } from './filtering';
 import { ResponsiveOverlay } from './ResponsiveOverlay';
 
 const createApplicationSchema = z.object({
-  companyName: z.string().trim().min(1, '企业名称不能为空'),
-  jobTitle: z.string().trim().min(1, '应聘岗位不能为空'),
+  companyName: z.string().trim().min(1, 'COMPANY_NAME_REQUIRED'),
+  jobTitle: z.string().trim().min(1, 'JOB_TITLE_REQUIRED'),
 });
 
 type CreateApplicationForm = z.infer<typeof createApplicationSchema>;
@@ -28,6 +29,7 @@ type CreateApplicationOverlayProps = {
 };
 
 export function CreateApplicationOverlay({ onClose, open }: CreateApplicationOverlayProps) {
+  const { t } = useTranslation(['companies', 'common']);
   const router = useRouter();
   const companies = useQuery(api.companies.listForPicker, {}) ?? [];
   const createApplication = useMutation(api.applications.create);
@@ -74,7 +76,7 @@ export function CreateApplicationOverlay({ onClose, open }: CreateApplicationOve
     } catch (error) {
       const message = error instanceof Error ? error.message : '';
       setError('root', {
-        message: message.includes('相同岗位') ? '该企业下已存在相同岗位的应聘记录' : '添加失败，请重试',
+        message: message.includes('APPLICATION_DUPLICATE') ? t('companies:form.duplicateApplication') : t('common:errors.save'),
       });
     }
   }
@@ -86,11 +88,11 @@ export function CreateApplicationOverlay({ onClose, open }: CreateApplicationOve
   }
 
   return (
-    <ResponsiveOverlay open={open} onClose={close} title="添加企业">
+    <ResponsiveOverlay open={open} onClose={close} title={t('companies:form.addCompany')}>
       <YStack gap="$base">
         <YStack gap="$sm">
           <Text color="$text" fontWeight="600">
-            企业名称 *
+            {t('companies:form.companyName')} *
           </Text>
           <Controller
             control={control}
@@ -110,13 +112,13 @@ export function CreateApplicationOverlay({ onClose, open }: CreateApplicationOve
               />
             )}
           />
-          {errors.companyName ? <Text color="$danger">{errors.companyName.message}</Text> : null}
+          {errors.companyName ? <Text color="$danger">{t('companies:form.companyRequired')}</Text> : null}
         </YStack>
 
         {matchedCompanies.length > 0 ? (
           <YStack gap="$xs">
             <Text color="$textMuted" fontSize={13}>
-              已有企业
+              {t('companies:form.existingCompanies')}
             </Text>
             {matchedCompanies.slice(0, 5).map((company) => {
               const selected = company.companyId === selectedCompanyId;
@@ -138,44 +140,44 @@ export function CreateApplicationOverlay({ onClose, open }: CreateApplicationOve
                   }}
                 >
                   <Text color="$text">{company.name}</Text>
-                  {selected ? <Text color="$accentStrong">已选择</Text> : null}
+                  {selected ? <Text color="$accentStrong">{t('companies:form.selected')}</Text> : null}
                 </XStack>
               );
             })}
           </YStack>
         ) : normalizedCompanyName ? (
           <Text color="$textMuted" fontSize={13}>
-            “{companyName.trim()}” 将作为新企业创建
+            {t('companies:form.createNew', { name: companyName.trim() })}
           </Text>
         ) : null}
 
         <YStack gap="$sm">
           <Text color="$text" fontWeight="600">
-            应聘岗位 *
+            {t('companies:form.jobTitle')} *
           </Text>
           <Controller
             control={control}
             name="jobTitle"
             render={({ field }) => (
               <AppInput
-                placeholder="软件工程师"
+                placeholder={t('companies:form.jobPlaceholder')}
                 value={field.value}
                 onBlur={field.onBlur}
                 onChangeText={field.onChange}
               />
             )}
           />
-          {errors.jobTitle ? <Text color="$danger">{errors.jobTitle.message}</Text> : null}
+          {errors.jobTitle ? <Text color="$danger">{t('companies:form.jobRequired')}</Text> : null}
         </YStack>
 
         {errors.root?.message ? <Text color="$danger">{errors.root.message}</Text> : null}
 
         <XStack gap="$sm" style={{ justifyContent: 'flex-end' }}>
           <AppButton variant="secondary" disabled={isSubmitting} onPress={close}>
-            取消
+            {t('common:actions.cancel')}
           </AppButton>
           <AppButton variant="primary" disabled={isSubmitting} onPress={handleSubmit(submit)}>
-            {isSubmitting ? '添加中...' : '添加'}
+            {isSubmitting ? t('common:states.adding') : t('common:actions.add')}
           </AppButton>
         </XStack>
       </YStack>

@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from 'convex/react';
 import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { ScrollView } from 'react-native';
 import { Text, TextArea, XStack, YStack } from 'tamagui';
 import { z } from 'zod';
@@ -15,7 +16,7 @@ import type { InterviewDetailData, InterviewFormat } from './types';
 
 const positiveIntegerText = z.string().refine(
   (value) => !value.trim() || /^[1-9]\d*$/.test(value.trim()),
-  '请输入正整数',
+  'POSITIVE_INTEGER_REQUIRED',
 );
 
 const infoSchema = z.object({
@@ -44,12 +45,7 @@ type InterviewDetailFormOverlayProps = {
   selectionStepId: Id<'selectionSteps'>;
 };
 
-const formatOptions: { label: string; value: InterviewFormat }[] = [
-  { label: '线上', value: 'online' },
-  { label: '线下', value: 'offline' },
-  { label: '电话', value: 'phone' },
-  { label: '其他', value: 'other' },
-];
+const formatOptions: InterviewFormat[] = ['online', 'offline', 'phone', 'other'];
 
 export function InterviewDetailFormOverlay({
   detail,
@@ -77,6 +73,7 @@ function InterviewInfoForm({
   open,
   selectionStepId,
 }: Omit<InterviewDetailFormOverlayProps, 'hasQuestions' | 'mode'> & { open: boolean }) {
+  const { t } = useTranslation(['interview', 'common']);
   const createInterview = useMutation(api.interviews.create);
   const updateInterview = useMutation(api.interviews.update);
   const {
@@ -98,7 +95,7 @@ function InterviewInfoForm({
     const hasContent = Object.values(values).some((value) => value.trim());
 
     if (!detail && !hasContent) {
-      setError('root', { message: '请至少填写一项面试信息' });
+      setError('root', { message: t('interview:atLeastOneInfo') });
       return;
     }
 
@@ -117,59 +114,59 @@ function InterviewInfoForm({
       }
       onClose();
     } catch {
-      setError('root', { message: '保存失败，请重试' });
+      setError('root', { message: t('common:errors.save') });
     }
   }
 
   return (
-    <ResponsiveOverlay mobileNearFullscreen onClose={onClose} open={open} title={detail ? '编辑面试信息' : '添加面试信息'} width={560}>
+    <ResponsiveOverlay mobileNearFullscreen onClose={onClose} open={open} title={detail ? t('interview:editInfo') : t('interview:addInfo')} width={560}>
       <ScrollView keyboardShouldPersistTaps="handled" style={{ flex: 1 }}>
         <YStack gap="$lg" pb="$sm">
-          <FormField label="面试方式">
+          <FormField label={t('interview:format')}>
             <Controller
               control={control}
               name="interviewFormat"
               render={({ field }) => (
                 <XStack flexWrap="wrap" gap="$sm">
-                  <Choice label="未设置" selected={!field.value} onPress={() => field.onChange('')} />
+                  <Choice label={t('interview:unset')} selected={!field.value} onPress={() => field.onChange('')} />
                   {formatOptions.map((option) => (
                     <Choice
-                      key={option.value}
-                      label={option.label}
-                      selected={field.value === option.value}
-                      onPress={() => field.onChange(option.value)}
+                      key={option}
+                      label={t(`interview:formats.${option}`)}
+                      selected={field.value === option}
+                      onPress={() => field.onChange(option)}
                     />
                   ))}
                 </XStack>
               )}
             />
           </FormField>
-          <FormField label="面试官人数">
+          <FormField label={t('interview:interviewerCount')}>
             <Controller
               control={control}
               name="interviewerCount"
               render={({ field }) => (
-                <AppInput inputMode="numeric" placeholder="例如：2" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} />
+                <AppInput inputMode="numeric" placeholder={t('interview:placeholders.count')} value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} />
               )}
             />
-            {errors.interviewerCount ? <Text color="$danger">{errors.interviewerCount.message}</Text> : null}
+            {errors.interviewerCount ? <Text color="$danger">{t('interview:positiveInteger')}</Text> : null}
           </FormField>
-          <FormField label="实际时长（分钟）">
+          <FormField label={t('interview:duration')}>
             <Controller
               control={control}
               name="durationMinutes"
               render={({ field }) => (
-                <AppInput inputMode="numeric" placeholder="例如：45" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} />
+                <AppInput inputMode="numeric" placeholder={t('interview:placeholders.duration')} value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} />
               )}
             />
-            {errors.durationMinutes ? <Text color="$danger">{errors.durationMinutes.message}</Text> : null}
+            {errors.durationMinutes ? <Text color="$danger">{t('interview:positiveInteger')}</Text> : null}
           </FormField>
-          <FormField label="面试官信息">
+          <FormField label={t('interview:interviewerInfo')}>
             <Controller
               control={control}
               name="interviewerInfo"
               render={({ field }) => (
-                <TextArea minH={120} color="$text" placeholder="姓名、职位、部门或人员构成等" placeholderTextColor="$textMuted" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} style={{ borderRadius: 12 }} />
+                <TextArea minH={120} color="$text" placeholder={t('interview:placeholders.interviewer')} placeholderTextColor="$textMuted" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} style={{ borderRadius: 12 }} />
               )}
             />
           </FormField>
@@ -187,6 +184,7 @@ function InterviewReviewForm({
   open,
   selectionStepId,
 }: Omit<InterviewDetailFormOverlayProps, 'mode'> & { open: boolean }) {
+  const { t } = useTranslation(['interview', 'common']);
   const createInterview = useMutation(api.interviews.create);
   const updateInterview = useMutation(api.interviews.update);
   const {
@@ -208,7 +206,7 @@ function InterviewReviewForm({
     const hasContent = Object.values(values).some((value) => value.trim());
 
     if (!detail && !hasContent) {
-      setError('root', { message: '请至少填写一项复盘内容' });
+      setError('root', { message: t('interview:atLeastOneReview') });
       return;
     }
 
@@ -231,18 +229,18 @@ function InterviewReviewForm({
       }
       onClose();
     } catch {
-      setError('root', { message: '保存失败，请重试' });
+      setError('root', { message: t('common:errors.save') });
     }
   }
 
   return (
-    <ResponsiveOverlay mobileNearFullscreen onClose={onClose} open={open} title={detail ? '编辑面试复盘' : '开始复盘'} width={680}>
+    <ResponsiveOverlay mobileNearFullscreen onClose={onClose} open={open} title={detail ? t('interview:editReview') : t('interview:startReview')} width={680}>
       <ScrollView keyboardShouldPersistTaps="handled" style={{ flex: 1 }}>
         <YStack gap="$lg" pb="$sm">
-          <LongTextField control={control} label="表现好的地方" name="goodPoints" placeholder="记录这次回答或沟通中做得好的部分" />
-          <LongTextField control={control} label="需要改进的地方" name="improvementPoints" placeholder="记录这次暴露出的不足" />
-          <LongTextField control={control} label="下次改进事项" name="nextImprovement" placeholder="写下下一次可以采取的具体行动" />
-          <LongTextField control={control} label="其他复盘" name="overallNote" placeholder="补充其他与本次面试有关的复盘" />
+          <LongTextField control={control} label={t('interview:goodPoints')} name="goodPoints" placeholder={t('interview:placeholders.good')} />
+          <LongTextField control={control} label={t('interview:improvementPoints')} name="improvementPoints" placeholder={t('interview:placeholders.improvement')} />
+          <LongTextField control={control} label={t('interview:nextImprovement')} name="nextImprovement" placeholder={t('interview:placeholders.next')} />
+          <LongTextField control={control} label={t('interview:overallNote')} name="overallNote" placeholder={t('interview:placeholders.overall')} />
           <FormActions error={errors.root?.message} isSubmitting={isSubmitting} onCancel={onClose} onSubmit={handleSubmit(submit)} />
         </YStack>
       </ScrollView>
@@ -302,12 +300,13 @@ function FormActions({
   onCancel: () => void;
   onSubmit: () => void;
 }) {
+  const { t } = useTranslation('common');
   return (
     <YStack gap="$sm">
       {error ? <Text color="$danger">{error}</Text> : null}
       <XStack gap="$sm" style={{ justifyContent: 'flex-end' }}>
-        <AppButton variant="secondary" disabled={isSubmitting} onPress={onCancel}>取消</AppButton>
-        <AppButton variant="primary" disabled={isSubmitting} onPress={onSubmit}>{isSubmitting ? '保存中...' : '保存'}</AppButton>
+        <AppButton variant="secondary" disabled={isSubmitting} onPress={onCancel}>{t('actions.cancel')}</AppButton>
+        <AppButton variant="primary" disabled={isSubmitting} onPress={onSubmit}>{isSubmitting ? t('states.saving') : t('actions.save')}</AppButton>
       </XStack>
     </YStack>
   );

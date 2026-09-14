@@ -1,3 +1,5 @@
+import { getCurrentAppLocale } from '@/i18n';
+
 const japanOffsetMilliseconds = 9 * 60 * 60 * 1000;
 const datePattern = /^(\d{4})-(\d{2})-(\d{2})$/;
 const monthPattern = /^(\d{4})-(\d{2})$/;
@@ -85,14 +87,20 @@ export function buildMonthCells(month: string): CalendarCell[] {
 
 export function formatMonthTitle(month: string) {
   const [year, monthNumber] = month.split('-').map(Number);
-  return `${year}年 ${monthNumber}月`;
+  return new Intl.DateTimeFormat(getCurrentAppLocale(), {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: 'long',
+  }).format(new Date(Date.UTC(year, monthNumber - 1, 1)));
 }
 
 export function formatSelectedDate(date: string) {
   const parts = parseDateParts(date);
   if (!parts) return date;
-  const weekday = ['日', '一', '二', '三', '四', '五', '六'][
-    new Date(Date.UTC(parts.year, parts.month - 1, parts.day)).getUTCDay()
-  ];
-  return `${parts.month}月${parts.day}日 周${weekday}`;
+  return new Intl.DateTimeFormat(getCurrentAppLocale(), {
+    timeZone: 'UTC',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'short',
+  }).format(new Date(Date.UTC(parts.year, parts.month - 1, parts.day)));
 }

@@ -195,6 +195,7 @@ export const getBySelectionStep = query({
       selectionStep: {
         selectionStepId: owned.selectionStep._id,
         name: owned.selectionStep.name,
+        presetKey: owned.selectionStep.presetKey,
         type: owned.selectionStep.type,
       },
       event: event

@@ -1,6 +1,7 @@
 import { Building2, FilePenLine, Trash2 } from '@tamagui/lucide-icons-2';
 import type { ReactNode } from 'react';
 import { Text, XStack, YStack } from 'tamagui';
+import { useTranslation } from 'react-i18next';
 
 import { ResponsiveOverlay } from '@/components/companies/ResponsiveOverlay';
 import type { ApplicationDetailData } from './types';
@@ -22,11 +23,12 @@ export function ApplicationDetailActionMenu({
   onRequestDelete,
   open,
 }: ApplicationDetailActionMenuProps) {
+  const { t } = useTranslation('companies');
   return (
     <ResponsiveOverlay
       open={open && Boolean(application)}
       onClose={onClose}
-      title="操作"
+      title={t('detail.actions')}
       desktopPresentation="popover"
       width={320}
     >
@@ -41,18 +43,18 @@ export function ApplicationDetailActionMenu({
 
           <MenuAction
             icon={<FilePenLine color="$textSecondary" size={18} />}
-            label="编辑应聘信息"
+            label={t('form.editApplication')}
             onPress={onEditApplication}
           />
           <MenuAction
             icon={<Building2 color="$textSecondary" size={18} />}
-            label="编辑企业信息"
+            label={t('form.editCompany')}
             onPress={onEditCompany}
           />
           <MenuAction
             danger
             icon={<Trash2 color="$danger" size={18} />}
-            label="删除应聘记录"
+            label={t('deleteDialog.action')}
             onPress={onRequestDelete}
           />
         </YStack>

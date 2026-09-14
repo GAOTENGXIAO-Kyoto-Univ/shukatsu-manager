@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight, Plus } from '@tamagui/lucide-icons-2';
 import { useQuery_experimental as useQuery } from 'convex/react';
 import { Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView } from 'react-native';
 import { Spinner, Text, XStack, YStack, useMedia } from 'tamagui';
 
@@ -27,8 +28,8 @@ import type {
 import { formatEventDate } from '@/components/events/eventFormatting';
 import { AppButton } from '@/components/ui/AppButton';
 import { useRetainedQueryData } from '@/hooks/useRetainedQueryData';
-
-const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
+import { getCurrentAppLocale } from '@/i18n';
+import { getSelectionStepDisplayName } from '@/components/selection/selectionConstants';
 
 function readRouteParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -41,21 +42,22 @@ function sortEvents(left: CalendarEvent, right: CalendarEvent) {
   return left.datetime - right.datetime || left.createdAt - right.createdAt;
 }
 
-function eventTitle(event: CalendarEvent) {
-  const suffix = event.timingType === 'deadline' ? ' 截止' : '';
+function eventTitle(event: CalendarEvent, deadlineSuffix: string, t: ReturnType<typeof useTranslation>['t']) {
+  const suffix = event.timingType === 'deadline' ? ` ${deadlineSuffix}` : '';
   return event.kind === 'independent'
     ? `${event.title}${suffix}`
-    : `${event.companyName} · ${event.selectionStepName}${suffix}`;
+    : `${event.companyName} · ${getSelectionStepDisplayName({ name: event.selectionStepName, presetKey: event.selectionStepPresetKey }, t)}${suffix}`;
 }
 
-function cellEventTitle(event: CalendarEvent) {
-  const suffix = event.timingType === 'deadline' ? ' 截止' : '';
+function cellEventTitle(event: CalendarEvent, deadlineSuffix: string, t: ReturnType<typeof useTranslation>['t']) {
+  const suffix = event.timingType === 'deadline' ? ` ${deadlineSuffix}` : '';
   return event.kind === 'independent'
     ? `${event.title}${suffix}`
-    : `${event.companyName} ${event.selectionStepName}${suffix}`;
+    : `${event.companyName} ${getSelectionStepDisplayName({ name: event.selectionStepName, presetKey: event.selectionStepPresetKey }, t)}${suffix}`;
 }
 
 export default function CalendarScreen() {
+  const { t } = useTranslation(['calendar', 'common', 'selection']);
   const router = useRouter();
   const params = useLocalSearchParams();
   const media = useMedia();
@@ -81,6 +83,12 @@ export default function CalendarScreen() {
   const [addOpen, setAddOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<IndependentCalendarEvent | null>(null);
   const isDesktop = Boolean(media.md);
+  const weekdays = Array.from(
+    { length: 7 },
+    (_, index) => new Intl.DateTimeFormat(getCurrentAppLocale(), {
+      timeZone: 'UTC', weekday: 'short',
+    }).format(new Date(Date.UTC(2024, 0, 1 + index))),
+  );
 
   useEffect(() => {
     if (rawMonth !== month || rawDate !== selectedDate) {
@@ -154,16 +162,16 @@ export default function CalendarScreen() {
                 CALENDAR
               </Text>
               <Text color="$text" fontSize={isDesktop ? 34 : 29} fontWeight="600" lineHeight={42}>
-                日历
+                {t('calendar:title')}
               </Text>
-              <Text color="$textSecondary">选考安排与个人日程集中在同一个月视图。</Text>
+              <Text color="$textSecondary">{t('calendar:description')}</Text>
             </YStack>
             <AppButton
               icon={<Plus size={18} />}
               variant="primary"
               onPress={() => setAddOpen(true)}
             >
-              添加
+              {t('common:actions.add')}
             </AppButton>
           </XStack>
 
@@ -177,7 +185,7 @@ export default function CalendarScreen() {
           >
             <XStack gap="$sm" px="$xs" style={{ alignItems: 'center', justifyContent: 'space-between' }}>
               <AppButton
-                aria-label="上个月"
+                aria-label={t('calendar:previousMonth')}
                 icon={<ChevronLeft size={18} />}
                 variant="ghost"
                 onPress={() => changeMonth(-1)}
@@ -193,12 +201,12 @@ export default function CalendarScreen() {
                     fontSize={12}
                     onPress={() => navigate(todayMonth, today)}
                   >
-                    回到今天
+                    {t('calendar:today')}
                   </Text>
                 ) : null}
               </YStack>
               <AppButton
-                aria-label="下个月"
+                aria-label={t('calendar:nextMonth')}
                 icon={<ChevronRight size={18} />}
                 variant="ghost"
                 onPress={() => changeMonth(1)}
@@ -260,7 +268,7 @@ export default function CalendarScreen() {
                             {event.hasExplicitTime
                               ? `${formatEventDate(event).split(' ').at(-1)} `
                               : ''}
-                            {cellEventTitle(event)}
+                            {cellEventTitle(event, t('common:eventTiming.deadlineSuffix'), t)}
                           </Text>
                         ))}
                         {dayEvents.length > 2 ? (
@@ -277,18 +285,18 @@ export default function CalendarScreen() {
             {eventState.status === 'pending' && !retainedEvents.hasData ? (
               <XStack gap="$sm" py="$sm" style={{ alignItems: 'center', justifyContent: 'center' }}>
                 <Spinner color="$accentStrong" size="small" />
-                <Text color="$textMuted" fontSize={13}>正在读取本月日程...</Text>
+                <Text color="$textMuted" fontSize={13}>{t('calendar:loadingMonth')}</Text>
               </XStack>
             ) : null}
             {eventState.status === 'error' && !retainedEvents.hasData ? (
               <XStack gap="$sm" py="$sm" style={{ alignItems: 'center', justifyContent: 'center' }}>
-                <Text color="$danger">本月日程读取失败，请稍后重试</Text>
-                <AppButton variant="secondary" onPress={() => setRetryToken((value) => value + 1)}>重试</AppButton>
+                <Text color="$danger">{t('calendar:monthLoadFailed')}</Text>
+                <AppButton variant="secondary" onPress={() => setRetryToken((value) => value + 1)}>{t('common:actions.retry')}</AppButton>
               </XStack>
             ) : eventState.status === 'success' && events.length === 0 ? (
               <XStack gap="$sm" py="$sm" style={{ alignItems: 'center', justifyContent: 'center' }}>
-                <Text color="$textMuted">本月暂无日程</Text>
-                <AppButton variant="ghost" onPress={() => setAddOpen(true)}>添加日程</AppButton>
+                <Text color="$textMuted">{t('calendar:noMonthEvents')}</Text>
+                <AppButton variant="ghost" onPress={() => setAddOpen(true)}>{t('calendar:addSchedule')}</AppButton>
               </XStack>
             ) : null}
           </YStack>
@@ -301,24 +309,24 @@ export default function CalendarScreen() {
                 </Text>
                 <Text color="$textMuted" fontSize={13}>
                   {eventState.status === 'pending' && !retainedEvents.hasData
-                    ? '读取中...'
+                    ? t('common:states.loading')
                     : selectedEvents.length > 0
-                      ? `${selectedEvents.length} 项日程`
-                      : '暂无日程'}
+                      ? t('calendar:eventCount', { count: selectedEvents.length })
+                      : t('calendar:noEvents')}
                 </Text>
               </YStack>
-              <AppButton variant="secondary" onPress={() => setAddOpen(true)}>添加日程</AppButton>
+              <AppButton variant="secondary" onPress={() => setAddOpen(true)}>{t('calendar:addSchedule')}</AppButton>
             </XStack>
 
             {eventState.status === 'pending' && !retainedEvents.hasData ? (
               <YStack borderColor="$border" borderWidth={1} gap="$sm" p="$xl" style={{ alignItems: 'center', borderRadius: 16 }}>
                 <Spinner color="$accentStrong" />
-                <Text color="$textSecondary">正在读取当天日程...</Text>
+                <Text color="$textSecondary">{t('calendar:loadingDay')}</Text>
               </YStack>
             ) : eventState.status === 'error' && !retainedEvents.hasData ? (
               <YStack borderColor="$border" borderWidth={1} gap="$sm" p="$xl" style={{ alignItems: 'center', borderRadius: 16 }}>
-                <Text color="$danger">当天日程读取失败，请稍后重试</Text>
-                <AppButton variant="secondary" onPress={() => setRetryToken((value) => value + 1)}>重试</AppButton>
+                <Text color="$danger">{t('calendar:dayLoadFailed')}</Text>
+                <AppButton variant="secondary" onPress={() => setRetryToken((value) => value + 1)}>{t('common:actions.retry')}</AppButton>
               </YStack>
             ) : selectedEvents.length > 0 ? (
               <YStack borderTopColor="$border" borderTopWidth={1}>
@@ -337,14 +345,14 @@ export default function CalendarScreen() {
                     <XStack gap="$base" style={{ alignItems: 'flex-start', justifyContent: 'space-between' }}>
                       <YStack flex={1} gap="$xs">
                         <Text color="$text" fontSize={17} fontWeight="600">
-                          {eventTitle(event)}
+                          {eventTitle(event, t('common:eventTiming.deadlineSuffix'), t)}
                         </Text>
                         {event.kind === 'selection' ? (
                           <Text color="$textSecondary" fontSize={13}>
                             {event.jobTitle}
                           </Text>
                         ) : (
-                          <Text color="$textMuted" fontSize={13}>独立日程</Text>
+                          <Text color="$textMuted" fontSize={13}>{t('calendar:independent')}</Text>
                         )}
                         {event.location ? (
                           <Text color="$textSecondary" fontSize={13}>{event.location}</Text>
@@ -360,7 +368,7 @@ export default function CalendarScreen() {
                           </Text>
                         ) : null}
                         <Text color={event.kind === 'selection' ? '$infoStrong' : '$accentStrong'} fontSize={12}>
-                          {event.kind === 'selection' ? '选考' : '个人'}
+                          {event.kind === 'selection' ? t('calendar:selection') : t('calendar:personal')}
                         </Text>
                       </YStack>
                     </XStack>
@@ -375,9 +383,9 @@ export default function CalendarScreen() {
                 p="$xl"
                 style={{ alignItems: 'center', borderRadius: 16 }}
               >
-                <Text color="$text" fontSize={17} fontWeight="600">当天暂无日程</Text>
+                <Text color="$text" fontSize={17} fontWeight="600">{t('calendar:noDayEvents')}</Text>
                 <Text color="$textSecondary" style={{ textAlign: 'center' }}>
-                  可以添加个人安排，或为尚未设置时间的选考步骤安排日程。
+                  {t('calendar:noDayDescription')}
                 </Text>
               </YStack>
             )}

@@ -2,27 +2,33 @@ import { useClerk, useUser } from '@clerk/expo';
 import {
   ChevronRight,
   LogOut,
+  Languages,
   Mail,
   Pencil,
   ShieldCheck,
   UserRound,
 } from '@tamagui/lucide-icons-2';
 import { useQuery_experimental as useQuery } from 'convex/react';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { Image, ScrollView } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Button, Text, XStack, YStack, useMedia } from 'tamagui';
 
 import { api } from '../../../convex/_generated/api';
 import { warmPaperColors } from '../../../tamagui.config';
 import { DisplayNameEditor } from '@/components/profile/DisplayNameEditor';
+import { LanguageSelectorOverlay } from '@/components/profile/LanguageSelectorOverlay';
 import { AppButton } from '@/components/ui/AppButton';
+import { getCurrentAppLocale, LOCALE_DISPLAY_NAMES } from '@/i18n';
 
 export default function ProfileScreen() {
+  const { t } = useTranslation(['profile', 'common']);
   const media = useMedia();
   const isDesktop = Boolean(media.md);
   const { isLoaded, isSignedIn, user } = useUser();
   const clerk = useClerk();
   const [editorOpen, setEditorOpen] = useState(false);
+  const [languageOpen, setLanguageOpen] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [retryToken, setRetryToken] = useState(0);
@@ -38,7 +44,7 @@ export default function ProfileScreen() {
     try {
       await clerk.signOut();
     } catch {
-      setLogoutError('退出失败，请重试');
+      setLogoutError(t('profile:signOutFailed'));
       setIsSigningOut(false);
     }
   }
@@ -51,10 +57,10 @@ export default function ProfileScreen() {
         fontWeight="600"
         lineHeight={isDesktop ? 43 : 36}
       >
-        我的
+        {t('profile:title')}
       </Text>
       <Text color="$textSecondary" fontSize={isDesktop ? 16 : 14} lineHeight={22}>
-        管理个人资料与账号
+        {t('profile:description')}
       </Text>
     </YStack>
   );
@@ -88,11 +94,15 @@ export default function ProfileScreen() {
 
   return (
     <ProfilePageFrame header={pageHeader} isDesktop={isDesktop}>
-      <ProfileSection title="个人信息">
-        <InfoRow borderBottom label="头像">
-          <ProfileAvatar imageUrl={user.imageUrl} />
+      <ProfileSection title={t('profile:personalInfo')}>
+        <InfoRow borderBottom label={t('profile:avatar')}>
+          <ProfileAvatar
+            key={user.imageUrl}
+            accessibilityLabel={t('profile:currentAvatar')}
+            imageUrl={user.imageUrl}
+          />
         </InfoRow>
-        <InfoRow borderBottom label="显示名称">
+        <InfoRow borderBottom label={t('profile:displayName')}>
           <XStack flex={1} gap="$sm" style={{ alignItems: 'center', justifyContent: 'flex-end' }}>
             <Text
               color={currentUser.displayName ? '$text' : '$textMuted'}
@@ -100,21 +110,21 @@ export default function ProfileScreen() {
               numberOfLines={1}
               style={{ flexShrink: 1 }}
             >
-              {currentUser.displayName ?? '未设置'}
+              {currentUser.displayName ?? t('common:states.notSet')}
             </Text>
             <AppButton
-              aria-label="编辑显示名称"
+              aria-label={t('profile:editDisplayName')}
               icon={<Pencil size={15} />}
               minH={36}
               px="$sm"
               variant="ghost"
               onPress={() => setEditorOpen(true)}
             >
-              编辑
+              {t('common:actions.edit')}
             </AppButton>
           </XStack>
         </InfoRow>
-        <InfoRow label="登录邮箱">
+        <InfoRow label={t('profile:loginEmail')}>
           <XStack flex={1} gap="$sm" style={{ alignItems: 'center', justifyContent: 'flex-end' }}>
             <Mail color="$textMuted" size={17} />
             <Text
@@ -123,16 +133,25 @@ export default function ProfileScreen() {
               numberOfLines={1}
               style={{ flexShrink: 1 }}
             >
-              {email ?? '未设置'}
+              {email ?? t('common:states.notSet')}
             </Text>
           </XStack>
         </InfoRow>
       </ProfileSection>
 
-      <ProfileSection title="账号">
+      <ProfileSection title={t('profile:appSettings')}>
+        <ActionRow
+          icon={<Languages color="$accentStrong" size={20} />}
+          label={t('profile:language')}
+          value={LOCALE_DISPLAY_NAMES[getCurrentAppLocale()]}
+          onPress={() => setLanguageOpen(true)}
+        />
+      </ProfileSection>
+
+      <ProfileSection title={t('profile:account')}>
         <ActionRow
           icon={<ShieldCheck color="$accentStrong" size={20} />}
-          label="账号管理"
+          label={t('profile:accountManagement')}
           onPress={() => clerk.openUserProfile()}
         />
       </ProfileSection>
@@ -140,7 +159,7 @@ export default function ProfileScreen() {
       <YStack gap="$sm" pt="$sm">
         <Button
           unstyled
-          aria-label="退出登录"
+          aria-label={t('profile:signOut')}
           borderColor="$border"
           borderWidth={1}
           cursor={isSigningOut ? 'not-allowed' : 'pointer'}
@@ -160,7 +179,7 @@ export default function ProfileScreen() {
           <XStack gap="$sm" style={{ alignItems: 'center', justifyContent: 'center' }}>
             <LogOut color="$danger" size={19} />
             <Text color="$danger" fontSize={15} fontWeight="600">
-              {isSigningOut ? '正在退出...' : '退出登录'}
+              {isSigningOut ? t('profile:signingOut') : t('profile:signOut')}
             </Text>
           </XStack>
         </Button>
@@ -176,6 +195,9 @@ export default function ProfileScreen() {
         onClose={() => setEditorOpen(false)}
         open={editorOpen}
       />
+      {languageOpen ? (
+        <LanguageSelectorOverlay onClose={() => setLanguageOpen(false)} open />
+      ) : null}
     </ProfilePageFrame>
   );
 }
@@ -252,7 +274,17 @@ function InfoRow({
   );
 }
 
-function ActionRow({ icon, label, onPress }: { icon: ReactNode; label: string; onPress: () => void }) {
+function ActionRow({
+  icon,
+  label,
+  onPress,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  onPress: () => void;
+  value?: string;
+}) {
   return (
     <Button
       unstyled
@@ -282,18 +314,21 @@ function ActionRow({ icon, label, onPress }: { icon: ReactNode; label: string; o
         <Text color="$text" flex={1} fontSize={15} fontWeight="600">
           {label}
         </Text>
+        {value ? <Text color="$textSecondary" fontSize={14}>{value}</Text> : null}
         <ChevronRight color="$textMuted" size={18} />
       </XStack>
     </Button>
   );
 }
 
-function ProfileAvatar({ imageUrl }: { imageUrl?: string }) {
+function ProfileAvatar({
+  accessibilityLabel,
+  imageUrl,
+}: {
+  accessibilityLabel: string;
+  imageUrl?: string;
+}) {
   const [imageFailed, setImageFailed] = useState(false);
-
-  useEffect(() => {
-    setImageFailed(false);
-  }, [imageUrl]);
 
   if (!imageUrl || imageFailed) {
     return (
@@ -310,7 +345,7 @@ function ProfileAvatar({ imageUrl }: { imageUrl?: string }) {
 
   return (
     <Image
-      accessibilityLabel="当前账号头像"
+      accessibilityLabel={accessibilityLabel}
       onError={() => setImageFailed(true)}
       source={{ uri: imageUrl }}
       style={{ borderRadius: 9999, height: 52, width: 52 }}
@@ -366,6 +401,7 @@ function SkeletonBlock({
 }
 
 function ProfileError({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation('common');
   return (
     <YStack
       bg="$surface"
@@ -376,14 +412,15 @@ function ProfileError({ onRetry }: { onRetry: () => void }) {
       style={{ alignItems: 'center', borderRadius: 16 }}
     >
       <Text color="$danger" fontSize={15}>
-        加载失败，请重试
+        {t('errors.load')}
       </Text>
-      <AppButton onPress={onRetry}>重试</AppButton>
+      <AppButton onPress={onRetry}>{t('actions.retry')}</AppButton>
     </YStack>
   );
 }
 
 function ProfileUnavailable() {
+  const { t } = useTranslation('profile');
   return (
     <YStack
       bg="$surface"
@@ -393,7 +430,7 @@ function ProfileUnavailable() {
       style={{ alignItems: 'center', borderRadius: 16 }}
     >
       <Text color="$textSecondary" fontSize={15} style={{ textAlign: 'center' }}>
-        账号信息暂不可用，请稍后重试
+        {t('accountUnavailable')}
       </Text>
     </YStack>
   );

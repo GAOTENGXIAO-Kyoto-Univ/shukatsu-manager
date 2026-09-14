@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "dependencies": {
     "@clerk/expo": "^4.5.2",
+    "@clerk/localizations": "^4.16.1",
     "@expo/metro-runtime": "~57.0.12",
     "@hookform/resolvers": "^5.9.1",
     "@tamagui/config": "^2.7.7",
@@ -13,13 +14,16 @@
     "expo-constants": "~57.0.13",
     "expo-font": "~57.0.1",
     "expo-linking": "~57.0.7",
+    "expo-localization": "~57.0.2",
     "expo-router": "~57.0.15",
     "expo-system-ui": "~57.0.2",
     "expo-web-browser": "~57.0.2",
+    "i18next": "^26.4.2",
     "posthog-js": "^1.427.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-hook-form": "^7.86.0",
+    "react-i18next": "^17.0.14",
     "react-native": "0.86.2",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-reanimated": "4.5.1",
@@ -42,7 +46,9 @@
     "reset-project": "node ./scripts/reset-project.js",
     "web": "expo start --web",
     "export:web": "expo export --platform web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "i18n:check": "node --no-warnings --experimental-strip-types scripts/i18n-check.mjs",
+    "test": "node --no-warnings --experimental-strip-types --loader ./scripts/typescript-loader.mjs --test scripts/i18n-tests.mjs"
   },
   "private": true
 }

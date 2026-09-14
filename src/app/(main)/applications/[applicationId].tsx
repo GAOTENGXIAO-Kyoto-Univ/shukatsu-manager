@@ -3,8 +3,9 @@ import { useMutation, useQuery_experimental as useQuery } from 'convex/react';
 import { Href, useLocalSearchParams, useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
-import { Linking, ScrollView } from 'react-native';
-import { XStack, YStack, Text, useMedia } from 'tamagui';
+import { useTranslation } from 'react-i18next';
+import { Linking, ScrollView, type LayoutChangeEvent } from 'react-native';
+import { XStack, YStack, Text } from 'tamagui';
 
 import { api } from '../../../../convex/_generated/api';
 import type { Id } from '../../../../convex/_generated/dataModel';
@@ -20,19 +21,27 @@ import { useTimeBucket } from '@/hooks/useTimeBucket';
 import { SelectionStatusBadge } from '@/components/selection/SelectionStatusBadge';
 import { SelectionStepActions } from '@/components/selection/SelectionStepActions';
 import { canMoveStep, SelectionTimeline } from '@/components/selection/SelectionTimeline';
-import { getStatusLabel } from '@/components/selection/selectionConstants';
+import { getSelectionStepDisplayName, getStatusLabel } from '@/components/selection/selectionConstants';
 import { AppButton } from '@/components/ui/AppButton';
 import { AppToast } from '@/components/ui/AppToast';
 import { LoadingState, MessageState } from '@/components/ui/States';
 import { useRetainedQueryData } from '@/hooks/useRetainedQueryData';
+
+const APPLICATION_DETAIL_SELECTION_MIN_WIDTH = 480;
+const APPLICATION_DETAIL_INFO_COLUMN_WIDTH = 360;
+const APPLICATION_DETAIL_COLUMN_GAP = 32;
+const APPLICATION_DETAIL_TWO_COLUMN_MIN_WIDTH =
+  APPLICATION_DETAIL_SELECTION_MIN_WIDTH +
+  APPLICATION_DETAIL_INFO_COLUMN_WIDTH +
+  APPLICATION_DETAIL_COLUMN_GAP;
 
 function readRouteParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
 export default function ApplicationDetailScreen() {
+  const { t } = useTranslation(['selection', 'common', 'companies']);
   const router = useRouter();
-  const media = useMedia();
   const params = useLocalSearchParams();
   const timeBucket = useTimeBucket();
   const applicationId = readRouteParam(params.applicationId);
@@ -56,6 +65,7 @@ export default function ApplicationDetailScreen() {
   const [deleteTarget, setDeleteTarget] = useState<DeleteApplicationTarget | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [dismissedStepParam, setDismissedStepParam] = useState<string | null>(null);
+  const [hasTwoColumnSpace, setHasTwoColumnSpace] = useState(false);
   const deepLinkedStep =
     stepParam && retainedApplication.hasData && retainedApplication.data
       ? retainedApplication.data.selectionSteps.find(
@@ -99,14 +109,14 @@ export default function ApplicationDetailScreen() {
     try {
       await Linking.openURL(url);
     } catch {
-      setToastMessage('链接打开失败');
+      setToastMessage(t('companies:detail.openLinkFailed'));
     }
   }
 
   if (!applicationId) {
     return (
       <PageFrame>
-        <MessageState message="应聘记录不存在" actionLabel="返回企业" onAction={goBack} />
+        <MessageState message={t('companies:detail.missing')} actionLabel={t('companies:detail.back')} onAction={goBack} />
       </PageFrame>
     );
   }
@@ -114,7 +124,7 @@ export default function ApplicationDetailScreen() {
   if (applicationState.status === 'pending' && !retainedApplication.hasData) {
     return (
       <PageFrame>
-        <LoadingState message="正在读取应聘记录..." />
+        <LoadingState message={t('companies:detail.loading')} />
       </PageFrame>
     );
   }
@@ -122,7 +132,7 @@ export default function ApplicationDetailScreen() {
   if (applicationState.status === 'error' && !retainedApplication.hasData) {
     return (
       <PageFrame>
-        <MessageState message="读取失败，请重试" actionLabel="返回企业" onAction={goBack} />
+        <MessageState message={t('companies:detail.loadFailed')} actionLabel={t('companies:detail.back')} onAction={goBack} />
       </PageFrame>
     );
   }
@@ -130,13 +140,12 @@ export default function ApplicationDetailScreen() {
   if (!retainedApplication.hasData || !retainedApplication.data) {
     return (
       <PageFrame>
-        <MessageState message="应聘记录不存在，或你没有访问权限" actionLabel="返回企业" onAction={goBack} />
+        <MessageState message={t('companies:detail.forbidden')} actionLabel={t('companies:detail.back')} onAction={goBack} />
       </PageFrame>
     );
   }
 
   const application: ApplicationDetailData = retainedApplication.data;
-  const isDesktop = Boolean(media.md);
   const activeStepId = selectedStepId ??
     (deepLinkedStep && dismissedStepParam !== stepParam
       ? deepLinkedStep.selectionStepId
@@ -170,9 +179,9 @@ export default function ApplicationDetailScreen() {
         applicationId: application.applicationId,
         orderedStepIds,
       });
-      setToastMessage('顺序已更新');
-    } catch (error) {
-      setToastMessage(error instanceof Error ? error.message : '顺序更新失败');
+      setToastMessage(t('companies:detail.reordered'));
+    } catch {
+      setToastMessage(t('companies:detail.reorderFailed'));
     }
   }
 
@@ -192,6 +201,12 @@ export default function ApplicationDetailScreen() {
     }
   }
 
+  function handleMainContentLayout(event: LayoutChangeEvent) {
+    setHasTwoColumnSpace(
+      event.nativeEvent.layout.width >= APPLICATION_DETAIL_TWO_COLUMN_MIN_WIDTH,
+    );
+  }
+
   return (
     <PageFrame>
       <ScrollView keyboardShouldPersistTaps="handled" style={{ flex: 1 }}>
@@ -204,7 +219,7 @@ export default function ApplicationDetailScreen() {
                 onPress={goBack}
                 style={{ alignSelf: 'flex-start' }}
               >
-                返回
+                {t('common:actions.back')}
               </AppButton>
               <YStack gap="$xs">
                 <Text color="$text" fontSize={30} fontWeight="600" lineHeight={38}>
@@ -221,7 +236,7 @@ export default function ApplicationDetailScreen() {
               icon={<MoreHorizontal size={18} />}
               onPress={() => setActionMenuOpen(true)}
             >
-              操作
+              {t('companies:detail.actions')}
             </AppButton>
           </XStack>
 
@@ -229,12 +244,19 @@ export default function ApplicationDetailScreen() {
 
           <XStack
             gap="$xl"
+            onLayout={handleMainContentLayout}
+            width="100%"
             style={{
               alignItems: 'flex-start',
-              flexDirection: isDesktop ? 'row' : 'column',
+              flexDirection: hasTwoColumnSpace ? 'row' : 'column',
             }}
           >
-            <YStack flex={1} gap="$xl" width={isDesktop ? undefined : '100%'}>
+            <YStack
+              flex={hasTwoColumnSpace ? 1 : undefined}
+              gap="$xl"
+              width={hasTwoColumnSpace ? undefined : '100%'}
+              style={{ minWidth: hasTwoColumnSpace ? APPLICATION_DETAIL_SELECTION_MIN_WIDTH : 0 }}
+            >
               <SectionHeader
                 action={
                   application.selectionSteps.length > 0 ? (
@@ -243,11 +265,11 @@ export default function ApplicationDetailScreen() {
                       icon={<Plus size={18} />}
                       onPress={() => setAddStepOpen(true)}
                     >
-                      添加步骤
+                      {t('selection:actions.addStep')}
                     </AppButton>
                   ) : undefined
                 }
-                title="选考流程"
+                title={t('companies:detail.process')}
               />
               {application.selectionSteps.length > 0 ? (
                 <SelectionTimeline
@@ -262,16 +284,19 @@ export default function ApplicationDetailScreen() {
               ) : (
                 <YStack gap="$base" py="$xl" style={{ alignItems: 'center' }}>
                   <Text color="$text" fontSize={18} fontWeight="600">
-                    尚未设置选考流程
+                    {t('selection:status.noSteps')}
                   </Text>
                   <Text color="$textSecondary" lineHeight={22} style={{ maxWidth: 360, textAlign: 'center' }}>
-                    添加 ES、Web Test、面试等步骤后，当前阶段会自动从流程中计算。
+                    {t('companies:detail.noProcessDescription')}
                   </Text>
                 </YStack>
               )}
             </YStack>
 
-            <YStack gap="$xl" width={isDesktop ? 360 : '100%'}>
+            <YStack
+              gap="$xl"
+              width={hasTwoColumnSpace ? APPLICATION_DETAIL_INFO_COLUMN_WIDTH : '100%'}
+            >
               <ApplicationInfoSection application={application} onEdit={() => setEditApplicationOpen(true)} onOpenUrl={openUrl} />
               <CompanyInfoSection application={application} onEdit={() => setEditCompanyOpen(true)} onOpenUrl={openUrl} />
             </YStack>
@@ -358,34 +383,35 @@ function CurrentStatusPanel({
   application: ApplicationDetailData;
   onAddStep: () => void;
 }) {
+  const { t } = useTranslation(['selection', 'companies']);
   return (
     <YStack bg="$surface" gap="$base" p="$lg" style={{ borderRadius: 16 }}>
       <XStack gap="$base" style={{ alignItems: 'center', justifyContent: 'space-between' }}>
         <Text color="$textSecondary" fontSize={14} fontWeight="600">
-          当前状态
+          {t('companies:detail.currentStatus')}
         </Text>
         {application.currentStatus ? <SelectionStatusBadge status={application.currentStatus} /> : null}
       </XStack>
       {application.currentStage && application.currentStatus ? (
         <YStack gap="$xs">
           <Text color="$text" fontSize={26} fontWeight="600" lineHeight={34}>
-            {application.currentStage.name}
+            {getSelectionStepDisplayName(application.currentStage, t)}
           </Text>
           <Text color="$textSecondary" lineHeight={22}>
-            {getStatusLabel(application.currentStatus)}
+            {getStatusLabel(t, application.currentStatus)}
           </Text>
           {application.nextEvent ? (
             <YStack borderTopColor="$border" borderTopWidth={1} gap="$xs" mt="$md" pt="$md">
               <XStack gap="$sm" style={{ alignItems: 'center' }}>
                 <CalendarClock color="$textSecondary" size={17} />
-                <Text color="$textSecondary" fontSize={13} fontWeight="600">下一事项</Text>
+                <Text color="$textSecondary" fontSize={13} fontWeight="600">{t('companies:detail.nextEvent')}</Text>
               </XStack>
               <Text color={application.nextEvent.isOverdue ? '$danger' : '$text'} fontSize={18} fontWeight="600">
                 {formatEventDate(application.nextEvent, 'detail')}
               </Text>
               <Text color="$textSecondary" lineHeight={22}>
-                {getEventLabel(application.nextEvent.stepName, application.nextEvent.timingType)}
-                {application.nextEvent.isOverdue ? ' · 已超时' : ''}
+                {getEventLabel(getSelectionStepDisplayName({ name: application.nextEvent.stepName, presetKey: application.nextEvent.stepPresetKey }, t), application.nextEvent.timingType)}
+                {application.nextEvent.isOverdue ? ` · ${t('selection:status.overdue')}` : ''}
               </Text>
             </YStack>
           ) : null}
@@ -393,13 +419,13 @@ function CurrentStatusPanel({
       ) : (
         <YStack gap="$base">
           <Text color="$text" fontSize={24} fontWeight="600" lineHeight={32}>
-            尚未设置选考流程
+            {t('selection:status.noSteps')}
           </Text>
           <Text color="$textSecondary" lineHeight={22}>
-            当前状态会由已添加的选考步骤自动推导，不需要手动维护。
+            {t('companies:detail.derivedDescription')}
           </Text>
           <AppButton variant="primary" icon={<Plus size={18} />} onPress={onAddStep} style={{ alignSelf: 'flex-start' }}>
-            添加步骤
+            {t('selection:actions.addStep')}
           </AppButton>
         </YStack>
       )}
@@ -427,6 +453,7 @@ function ApplicationInfoSection({
   onEdit: () => void;
   onOpenUrl: (url: string) => void;
 }) {
+  const { t } = useTranslation('companies');
   const hasOptionalInfo = Boolean(
     application.preferenceLevel ||
       application.location ||
@@ -436,14 +463,14 @@ function ApplicationInfoSection({
   );
 
   return (
-    <InfoSection title="应聘信息" onEdit={onEdit}>
-      <InfoRow label="岗位" value={application.jobTitle} />
+    <InfoSection title={t('detail.applicationInfo')} onEdit={onEdit}>
+      <InfoRow label={t('job')} value={application.jobTitle} />
       {application.preferenceLevel ? (
-        <InfoRow label="志望度" value={`${application.preferenceLevel} / 5`} />
+        <InfoRow label={t('detail.preference')} value={`${application.preferenceLevel} / 5`} />
       ) : null}
-      {application.location ? <InfoRow label="工作地点" value={application.location} /> : null}
+      {application.location ? <InfoRow label={t('detail.location')} value={application.location} /> : null}
       {application.applicationUrl ? (
-        <InfoLink label="招聘职位页面" url={application.applicationUrl} onOpen={onOpenUrl} />
+        <InfoLink label={t('detail.jobPage')} url={application.applicationUrl} onOpen={onOpenUrl} />
       ) : null}
       {application.mypageUrl ? (
         <InfoLink label="MyPage" url={application.mypageUrl} onOpen={onOpenUrl} />
@@ -451,7 +478,7 @@ function ApplicationInfoSection({
       {application.memo ? <MemoBlock memo={application.memo} /> : null}
       {!hasOptionalInfo ? (
         <Text color="$textMuted" lineHeight={22}>
-          还没有补充地点、志望度、链接或备注。
+          {t('detail.noApplicationExtras')}
         </Text>
       ) : null}
     </InfoSection>
@@ -467,18 +494,19 @@ function CompanyInfoSection({
   onEdit: () => void;
   onOpenUrl: (url: string) => void;
 }) {
+  const { t } = useTranslation('companies');
   const hasOptionalInfo = Boolean(application.company.industry || application.company.websiteUrl);
 
   return (
-    <InfoSection title="企业信息" onEdit={onEdit}>
-      <InfoRow label="企业" value={application.company.name} />
-      {application.company.industry ? <InfoRow label="行业" value={application.company.industry} /> : null}
+    <InfoSection title={t('detail.companyInfo')} onEdit={onEdit}>
+      <InfoRow label={t('detail.company')} value={application.company.name} />
+      {application.company.industry ? <InfoRow label={t('industry')} value={application.company.industry} /> : null}
       {application.company.websiteUrl ? (
-        <InfoLink label="官网" url={application.company.websiteUrl} onOpen={onOpenUrl} />
+        <InfoLink label={t('detail.website')} url={application.company.websiteUrl} onOpen={onOpenUrl} />
       ) : null}
       {!hasOptionalInfo ? (
         <Text color="$textMuted" lineHeight={22}>
-          还没有补充行业或官网。
+          {t('detail.noCompanyExtras')}
         </Text>
       ) : null}
     </InfoSection>
@@ -494,6 +522,7 @@ function InfoSection({
   onEdit: () => void;
   title: string;
 }) {
+  const { t } = useTranslation('common');
   return (
     <YStack borderTopColor="$border" borderTopWidth={1} gap="$base" pt="$lg">
       <XStack gap="$base" style={{ alignItems: 'center', justifyContent: 'space-between' }}>
@@ -501,7 +530,7 @@ function InfoSection({
           {title}
         </Text>
         <AppButton variant="ghost" onPress={onEdit}>
-          编辑
+          {t('actions.edit')}
         </AppButton>
       </XStack>
       {children}
@@ -531,6 +560,7 @@ function InfoLink({
   onOpen: (url: string) => void;
   url: string;
 }) {
+  const { t } = useTranslation('common');
   return (
     <XStack gap="$sm" style={{ alignItems: 'center', justifyContent: 'space-between' }}>
       <YStack flex={1} gap="$xs">
@@ -542,17 +572,18 @@ function InfoLink({
         </Text>
       </YStack>
       <AppButton variant="secondary" onPress={() => onOpen(url)}>
-        打开
+        {t('actions.open')}
       </AppButton>
     </XStack>
   );
 }
 
 function MemoBlock({ memo }: { memo: string }) {
+  const { t } = useTranslation('companies');
   return (
     <YStack gap="$xs">
       <Text color="$textMuted" fontSize={13}>
-        备注
+        {t('detail.memo')}
       </Text>
       <YStack bg="$surfaceMuted" p="$md" style={{ borderRadius: 12 }}>
         <Text color="$text" lineHeight={22}>
@@ -567,6 +598,6 @@ function getUrlHost(url: string) {
   try {
     return new URL(url).hostname;
   } catch {
-    return '链接';
+    return url;
   }
 }

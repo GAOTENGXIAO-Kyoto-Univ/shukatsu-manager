@@ -216,6 +216,7 @@ export const listForCalendar = query({
         ...common,
         selectionStepId: selectionStep._id,
         selectionStepName: selectionStep.name,
+        selectionStepPresetKey: selectionStep.presetKey,
         selectionStepType: selectionStep.type,
         applicationId: application._id,
         jobTitle: application.jobTitle,
@@ -251,6 +252,7 @@ export const listSelectionStepTargets = query({
           steps.map(async (step) => ({
             selectionStepId: step._id,
             name: step.name,
+            presetKey: step.presetKey,
             type: step.type,
             order: step.order,
             completed: step.completed,

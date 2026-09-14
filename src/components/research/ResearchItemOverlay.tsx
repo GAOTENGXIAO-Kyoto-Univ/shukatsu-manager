@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Bold, Link2, List, ListOrdered, Plus, X } from '@tamagui/lucide-icons-2';
 import { useMutation } from 'convex/react';
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ElementRef, ReactElement } from 'react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { ScrollView } from 'react-native';
@@ -32,7 +33,7 @@ const sourceUrlSchema = z.object({
     } catch {
       return false;
     }
-  }, '请输入以 http:// 或 https:// 开头的链接'),
+  }, 'RESEARCH_SOURCE_URL_INVALID'),
 });
 
 const researchFormSchema = z.object({
@@ -48,7 +49,7 @@ const researchFormSchema = z.object({
     'other',
   ]),
   title: z.string(),
-  content: z.string().trim().min(1, '请输入研究内容'),
+  content: z.string().trim().min(1, 'RESEARCH_CONTENT_REQUIRED'),
   sourceUrls: z.array(sourceUrlSchema),
   isPinned: z.boolean(),
 });
@@ -83,6 +84,7 @@ export function ResearchItemOverlay({
   onSaved,
   open,
 }: ResearchItemOverlayProps) {
+  const { t } = useTranslation(['research', 'common']);
   const createResearchItem = useMutation(api.researchItems.create);
   const updateResearchItem = useMutation(api.researchItems.update);
   const editorRef = useRef<ElementRef<typeof TextArea>>(null);
@@ -119,7 +121,7 @@ export function ResearchItemOverlay({
 
   function applyFormat(format: ContentFormat) {
     const content = getValues('content');
-    const result = formatContent(content, editorSelection, format);
+    const result = formatContent(content, editorSelection, format, t);
 
     setValue('content', result.content, { shouldDirty: true, shouldValidate: true });
     setEditorSelection(result.selection);
@@ -148,7 +150,7 @@ export function ResearchItemOverlay({
         });
         reset(values);
         onClose();
-        onSaved('已保存修改');
+        onSaved(t('research:form.saved'));
         return;
       }
 
@@ -163,15 +165,15 @@ export function ResearchItemOverlay({
       });
       reset(values);
       onClose();
-      onSaved('已添加企业研究');
+      onSaved(t('research:form.added'));
     } catch (error) {
       const message = error instanceof Error ? error.message : '';
       setErrorMessage(
-        message.includes('来源链接格式不正确')
-          ? '来源链接格式不正确'
-          : message.includes('请输入研究内容')
-            ? '请输入研究内容'
-            : '保存失败，请重试',
+        message.includes('RESEARCH_SOURCE_URL_INVALID')
+          ? t('research:form.invalidSource')
+          : message.includes('RESEARCH_CONTENT_REQUIRED')
+            ? t('research:form.contentRequired')
+            : t('common:errors.save'),
       );
     }
   }
@@ -183,7 +185,7 @@ export function ResearchItemOverlay({
         mobileNearFullscreen
         onClose={requestClose}
         open={open}
-        title={item ? '编辑企业研究' : '添加企业研究'}
+        title={item ? t('research:edit') : t('research:add')}
         width={740}
       >
         <ScrollView
@@ -192,19 +194,19 @@ export function ResearchItemOverlay({
           contentContainerStyle={{ paddingBottom: 4 }}
         >
           <YStack gap="$lg">
-            <FormSection label="适用范围 *">
+            <FormSection label={`${t('research:form.applicableScope')} *`}>
               <Controller
                 control={control}
                 name="scope"
                 render={({ field }) => (
                   <YStack gap="$sm">
                     <ScopeOption
-                      label={`${application.companyName} 共通`}
+                      label={t('research:companyShared', { company: application.companyName })}
                       selected={field.value === 'company'}
                       onPress={() => field.onChange('company')}
                     />
                     <ScopeOption
-                      label={`仅 ${application.companyName} + ${application.jobTitle}`}
+                      label={t('research:applicationScope', { company: application.companyName, job: application.jobTitle })}
                       selected={field.value === 'application'}
                       onPress={() => field.onChange('application')}
                     />
@@ -213,12 +215,12 @@ export function ResearchItemOverlay({
               />
               {item && !item.applicationId && selectedScope === 'application' ? (
                 <Text color="$warningStrong" fontSize={13} lineHeight={20}>
-                  修改后，这条研究将不再显示在 {application.companyName} 的其他岗位中。
+                  {t('research:form.scopeChangeHint', { company: application.companyName })}
                 </Text>
               ) : null}
             </FormSection>
 
-            <FormSection label="分类 *">
+            <FormSection label={`${t('research:category')} *`}>
               <Controller
                 control={control}
                 name="category"
@@ -226,10 +228,10 @@ export function ResearchItemOverlay({
                   <XStack flexWrap="wrap" gap="$sm">
                     {researchCategoryOptions.map((option) => (
                       <CategoryOption
-                        key={option.value}
-                        label={option.label}
-                        selected={field.value === option.value}
-                        onPress={() => field.onChange(option.value)}
+                        key={option}
+                        label={t(`research:categories.${option}`)}
+                        selected={field.value === option}
+                        onPress={() => field.onChange(option)}
                       />
                     ))}
                   </XStack>
@@ -237,13 +239,13 @@ export function ResearchItemOverlay({
               />
             </FormSection>
 
-            <FormSection label="标题（可选）">
+            <FormSection label={t('research:form.optionalTitle')}>
               <Controller
                 control={control}
                 name="title"
                 render={({ field }) => (
                   <AppInput
-                    placeholder="例如：PlayStation 海外业务"
+                    placeholder={t('research:form.titlePlaceholder')}
                     value={field.value}
                     onBlur={field.onBlur}
                     onChangeText={field.onChange}
@@ -252,12 +254,12 @@ export function ResearchItemOverlay({
               />
             </FormSection>
 
-            <FormSection label="内容 *">
+            <FormSection label={`${t('research:form.content')} *`}>
               <XStack flexWrap="wrap" gap="$xs">
-                <FormatButton icon={<Bold size={16} />} label="加粗" onPress={() => applyFormat('bold')} />
-                <FormatButton icon={<List size={16} />} label="无序列表" onPress={() => applyFormat('unordered-list')} />
-                <FormatButton icon={<ListOrdered size={16} />} label="有序列表" onPress={() => applyFormat('ordered-list')} />
-                <FormatButton icon={<Link2 size={16} />} label="链接" onPress={() => applyFormat('link')} />
+                <FormatButton icon={<Bold size={16} />} label={t('research:form.bold')} onPress={() => applyFormat('bold')} />
+                <FormatButton icon={<List size={16} />} label={t('research:form.unordered')} onPress={() => applyFormat('unordered-list')} />
+                <FormatButton icon={<ListOrdered size={16} />} label={t('research:form.ordered')} onPress={() => applyFormat('ordered-list')} />
+                <FormatButton icon={<Link2 size={16} />} label={t('research:form.link')} onPress={() => applyFormat('link')} />
               </XStack>
               <Controller
                 control={control}
@@ -267,7 +269,7 @@ export function ResearchItemOverlay({
                     ref={editorRef}
                     minH={220}
                     color="$text"
-                    placeholder="记录业务、企业文化或志望动机素材..."
+                    placeholder={t('research:form.contentPlaceholder')}
                     placeholderTextColor="$textMuted"
                     selection={editorSelection}
                     value={field.value}
@@ -278,10 +280,10 @@ export function ResearchItemOverlay({
                   />
                 )}
               />
-              {errors.content ? <Text color="$danger">{errors.content.message}</Text> : null}
+              {errors.content ? <Text color="$danger">{t('research:form.contentRequired')}</Text> : null}
             </FormSection>
 
-            <FormSection label="来源">
+            <FormSection label={t('research:form.source')}>
               <YStack gap="$sm">
                 {fields.map((field, index) => (
                   <YStack key={field.id} gap="$xs">
@@ -301,7 +303,7 @@ export function ResearchItemOverlay({
                         )}
                       />
                       <AppButton
-                        aria-label="移除来源"
+                        aria-label={t('research:form.removeSource')}
                         variant="ghost"
                         icon={<X size={18} />}
                         onPress={() => remove(index)}
@@ -309,7 +311,7 @@ export function ResearchItemOverlay({
                     </XStack>
                     {errors.sourceUrls?.[index]?.value ? (
                       <Text color="$danger" fontSize={13}>
-                        {errors.sourceUrls[index]?.value?.message}
+                        {t('research:form.invalidSource')}
                       </Text>
                     ) : null}
                   </YStack>
@@ -320,7 +322,7 @@ export function ResearchItemOverlay({
                   onPress={() => append({ value: '' })}
                   style={{ alignSelf: 'flex-start' }}
                 >
-                  添加来源
+                  {t('research:form.addSource')}
                 </AppButton>
               </YStack>
             </FormSection>
@@ -332,10 +334,10 @@ export function ResearchItemOverlay({
                 <XStack gap="$base" minH={44} style={{ alignItems: 'center', justifyContent: 'space-between' }}>
                   <YStack flex={1} gap="$xs">
                     <Text color="$text" fontWeight="600">
-                      置顶这条研究
+                      {t('research:form.pin')}
                     </Text>
                     <Text color="$textMuted" fontSize={13}>
-                      置顶内容会优先显示。
+                      {t('research:form.pinHint')}
                     </Text>
                   </YStack>
                   <Switch
@@ -357,10 +359,10 @@ export function ResearchItemOverlay({
 
             <XStack gap="$sm" pb="$sm" style={{ justifyContent: 'flex-end' }}>
               <AppButton variant="secondary" disabled={isSubmitting} onPress={requestClose}>
-                取消
+                {t('common:actions.cancel')}
               </AppButton>
               <AppButton variant="primary" disabled={isSubmitting} onPress={handleSubmit(submit)}>
-                {isSubmitting ? '保存中...' : item ? '保存' : '添加'}
+                {isSubmitting ? t('common:states.saving') : item ? t('common:actions.save') : t('common:actions.add')}
               </AppButton>
             </XStack>
           </YStack>
@@ -370,15 +372,15 @@ export function ResearchItemOverlay({
       <ResponsiveOverlay
         onClose={() => setDiscardOpen(false)}
         open={discardOpen}
-        title="放弃未保存的修改？"
+        title={t('research:form.discardTitle')}
       >
         <YStack gap="$base">
           <Text color="$textSecondary" lineHeight={22}>
-            当前输入尚未保存，放弃后无法恢复。
+            {t('research:form.discardDescription')}
           </Text>
           <XStack gap="$sm" style={{ justifyContent: 'flex-end' }}>
             <AppButton variant="secondary" onPress={() => setDiscardOpen(false)}>
-              继续编辑
+              {t('research:form.continueEditing')}
             </AppButton>
             <AppButton
               variant="danger"
@@ -388,7 +390,7 @@ export function ResearchItemOverlay({
                 onClose();
               }}
             >
-              放弃
+              {t('research:form.discard')}
             </AppButton>
           </XStack>
         </YStack>
@@ -484,19 +486,20 @@ function formatContent(
   content: string,
   selection: EditorSelection,
   format: ContentFormat,
+  t: ReturnType<typeof useTranslation>['t'],
 ): { content: string; selection: EditorSelection } {
   const start = Math.min(selection.start, content.length);
   const end = Math.min(Math.max(selection.end, start), content.length);
   const selectedText = content.slice(start, end);
 
   if (format === 'bold') {
-    const label = selectedText || '加粗文字';
+    const label = selectedText || t('research:form.boldText');
     const replacement = `**${label}**`;
     return replaceSelection(content, start, end, replacement, start + 2, start + 2 + label.length);
   }
 
   if (format === 'link') {
-    const label = selectedText || '链接文字';
+    const label = selectedText || t('research:form.linkText');
     const replacement = `[${label}](https://example.com)`;
     const urlStart = start + label.length + 3;
     return replaceSelection(content, start, end, replacement, urlStart, urlStart + 19);
@@ -505,7 +508,7 @@ function formatContent(
   const prefix = format === 'ordered-list' ? '1. ' : '- ';
 
   if (!selectedText) {
-    const replacement = `${prefix}列表项`;
+    const replacement = `${prefix}${t('research:form.listItem')}`;
     return replaceSelection(
       content,
       start,

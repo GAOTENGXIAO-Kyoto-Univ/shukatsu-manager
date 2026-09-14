@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery_experimental as useQuery } from 'convex/react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView } from 'react-native';
 import { Text, XStack, YStack } from 'tamagui';
 import { z } from 'zod';
@@ -10,7 +11,7 @@ import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { ResponsiveOverlay } from '@/components/companies/ResponsiveOverlay';
 import { eventToFormValues } from '@/components/events/eventFormatting';
-import { getStepTypeLabel } from '@/components/selection/selectionConstants';
+import { getSelectionStepDisplayName, getStepTypeLabel } from '@/components/selection/selectionConstants';
 import { AppButton } from '@/components/ui/AppButton';
 import { AppInput } from '@/components/ui/AppInput';
 import { analytics } from '@/lib/analytics';
@@ -27,7 +28,7 @@ const formSchema = z
     applicationId: z.string(),
     selectionStepId: z.string(),
     timingType: z.enum(['scheduled', 'deadline']),
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '请选择日期'),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'DATE_REQUIRED'),
     time: z.string(),
     location: z.string(),
     meetingUrl: z.string(),
@@ -35,16 +36,16 @@ const formSchema = z
   })
   .superRefine((values, ctx) => {
     if (values.mode === 'independent' && !values.title.trim()) {
-      ctx.addIssue({ code: 'custom', path: ['title'], message: '标题不能为空' });
+      ctx.addIssue({ code: 'custom', path: ['title'], message: 'TITLE_REQUIRED' });
     }
     if (values.mode === 'selection' && !values.applicationId) {
-      ctx.addIssue({ code: 'custom', path: ['applicationId'], message: '请选择应聘记录' });
+      ctx.addIssue({ code: 'custom', path: ['applicationId'], message: 'APPLICATION_REQUIRED' });
     }
     if (values.mode === 'selection' && !values.selectionStepId) {
-      ctx.addIssue({ code: 'custom', path: ['selectionStepId'], message: '请选择选考步骤' });
+      ctx.addIssue({ code: 'custom', path: ['selectionStepId'], message: 'SELECTION_STEP_REQUIRED' });
     }
     if (values.timingType === 'scheduled' && !values.time) {
-      ctx.addIssue({ code: 'custom', path: ['time'], message: '预定时间必须填写时间' });
+      ctx.addIssue({ code: 'custom', path: ['time'], message: 'TIME_REQUIRED' });
     }
     if (values.meetingUrl.trim()) {
       try {
@@ -54,7 +55,7 @@ const formSchema = z
         ctx.addIssue({
           code: 'custom',
           path: ['meetingUrl'],
-          message: '请输入有效的 http/https 链接',
+          message: 'URL_INVALID',
         });
       }
     }
@@ -73,6 +74,7 @@ export function CalendarEventOverlay({
   onClose: () => void;
   open: boolean;
 }) {
+  const { t } = useTranslation(['calendar', 'common', 'selection']);
   const createIndependent = useMutation(api.events.createIndependent);
   const createSelectionEvent = useMutation(api.events.create);
   const updateEvent = useMutation(api.events.update);
@@ -154,8 +156,8 @@ export function CalendarEventOverlay({
         });
       }
       onClose();
-    } catch (error) {
-      setSaveError(error instanceof Error ? error.message : '保存失败，请重试');
+    } catch {
+      setSaveError(t('common:errors.save'));
     }
   }
 
@@ -166,8 +168,8 @@ export function CalendarEventOverlay({
       await removeEvent({ eventId: event.eventId });
       setConfirmingDelete(false);
       onClose();
-    } catch (error) {
-      setSaveError(error instanceof Error ? error.message : '删除失败，请重试');
+    } catch {
+      setSaveError(t('common:errors.delete'));
     }
   }
 
@@ -185,7 +187,7 @@ export function CalendarEventOverlay({
         mobileNearFullscreen
         onClose={close}
         open={open}
-        title={event ? '编辑日程' : '添加日程'}
+        title={event ? t('calendar:editSchedule') : t('calendar:addSchedule')}
         width={520}
       >
         <ScrollView keyboardShouldPersistTaps="handled" style={{ flex: 1 }}>
@@ -195,19 +197,19 @@ export function CalendarEventOverlay({
                 control={control}
                 name="mode"
                 render={({ field }) => (
-                  <Field label="日程类型">
+                  <Field label={t('calendar:eventType')}>
                     <XStack gap="$sm" flexWrap="wrap">
                       <AppButton
                         variant={field.value === 'independent' ? 'primary' : 'secondary'}
                         onPress={() => field.onChange('independent')}
                       >
-                        独立日程
+                        {t('calendar:independent')}
                       </AppButton>
                       <AppButton
                         variant={field.value === 'selection' ? 'primary' : 'secondary'}
                         onPress={() => field.onChange('selection')}
                       >
-                        选考步骤
+                        {t('calendar:selectionStep')}
                       </AppButton>
                     </XStack>
                   </Field>
@@ -216,7 +218,7 @@ export function CalendarEventOverlay({
             ) : null}
 
             {mode === 'independent' || event ? (
-              <Field label="标题 *" error={errors.title?.message}>
+              <Field label={`${t('calendar:titleLabel')} *`} error={errors.title ? t('calendar:validation.title') : undefined}>
                 <Controller
                   control={control}
                   name="title"
@@ -246,26 +248,26 @@ export function CalendarEventOverlay({
               control={control}
               name="timingType"
               render={({ field }) => (
-                <Field label="时间类型 *">
+                <Field label={`${t('calendar:timingType')} *`}>
                   <XStack gap="$sm" flexWrap="wrap">
                     <AppButton
                       variant={field.value === 'scheduled' ? 'primary' : 'secondary'}
                       onPress={() => field.onChange('scheduled')}
                     >
-                      预定时间
+                      {t('calendar:scheduled')}
                     </AppButton>
                     <AppButton
                       variant={field.value === 'deadline' ? 'primary' : 'secondary'}
                       onPress={() => field.onChange('deadline')}
                     >
-                      截止日期
+                      {t('calendar:deadline')}
                     </AppButton>
                   </XStack>
                 </Field>
               )}
             />
 
-            <Field label="日期 *" error={errors.date?.message}>
+            <Field label={`${t('calendar:date')} *`} error={errors.date ? t('calendar:validation.date') : undefined}>
               <Controller
                 control={control}
                 name="date"
@@ -280,8 +282,8 @@ export function CalendarEventOverlay({
               />
             </Field>
             <Field
-              label={`时间${timingType === 'scheduled' ? ' *' : ''}`}
-              error={errors.time?.message}
+              label={`${t('calendar:time')}${timingType === 'scheduled' ? ' *' : ''}`}
+              error={errors.time ? t('calendar:validation.time') : undefined}
             >
               <Controller
                 control={control}
@@ -296,7 +298,7 @@ export function CalendarEventOverlay({
                 )}
               />
             </Field>
-            <Field label="地点">
+            <Field label={t('calendar:location')}>
               <Controller
                 control={control}
                 name="location"
@@ -305,7 +307,7 @@ export function CalendarEventOverlay({
                 )}
               />
             </Field>
-            <Field label="会议链接" error={errors.meetingUrl?.message}>
+            <Field label={t('calendar:meetingUrl')} error={errors.meetingUrl ? t('calendar:validation.url') : undefined}>
               <Controller
                 control={control}
                 name="meetingUrl"
@@ -319,7 +321,7 @@ export function CalendarEventOverlay({
                 )}
               />
             </Field>
-            <Field label="备注">
+            <Field label={t('calendar:note')}>
               <Controller
                 control={control}
                 name="note"
@@ -337,7 +339,7 @@ export function CalendarEventOverlay({
                   variant="ghost"
                   onPress={() => setConfirmingDelete(true)}
                 >
-                  删除日程
+                  {t('calendar:deleteSchedule')}
                 </AppButton>
               ) : null}
               <AppButton
@@ -345,7 +347,7 @@ export function CalendarEventOverlay({
                 variant="primary"
                 onPress={handleSubmit(submit)}
               >
-                {isSubmitting ? '保存中...' : event ? '保存' : '添加'}
+                {isSubmitting ? t('common:states.saving') : event ? t('common:actions.save') : t('common:actions.add')}
               </AppButton>
             </XStack>
           </YStack>
@@ -355,19 +357,19 @@ export function CalendarEventOverlay({
       <ResponsiveOverlay
         onClose={() => setConfirmingDelete(false)}
         open={confirmingDelete}
-        title="删除日程？"
+        title={t('calendar:deleteTitle')}
       >
         <YStack gap="$base">
           <Text color="$textSecondary" lineHeight={22}>
-            将删除「{event?.title}」。此操作无法撤销。
+            {t('calendar:deleteDescription', { title: event?.title })}
           </Text>
           {saveError ? <Text color="$danger">{saveError}</Text> : null}
           <XStack gap="$sm" style={{ justifyContent: 'flex-end' }}>
             <AppButton variant="secondary" onPress={() => setConfirmingDelete(false)}>
-              取消
+              {t('common:actions.cancel')}
             </AppButton>
             <AppButton variant="danger" onPress={() => void confirmDelete()}>
-              确认删除
+              {t('calendar:confirmDelete')}
             </AppButton>
           </XStack>
         </YStack>
@@ -397,15 +399,16 @@ function SelectionTargetFields({
   selectedApplication: ApplicationEventTarget | null;
   targets: ApplicationEventTarget[];
 }) {
+  const { t } = useTranslation(['calendar', 'selection']);
   const selectedStepId = useWatch({ control, name: 'selectionStepId' });
 
   return (
     <>
-      <Field label="应聘记录 *" error={errors.applicationId?.message}>
-        {isLoading ? <Text color="$textMuted">正在读取应聘记录...</Text> : null}
-        {loadError ? <Text color="$danger">应聘记录读取失败，请稍后重试</Text> : null}
+      <Field label={`${t('calendar:application')} *`} error={errors.applicationId ? t('calendar:validation.application') : undefined}>
+        {isLoading ? <Text color="$textMuted">{t('calendar:applicationsLoading')}</Text> : null}
+        {loadError ? <Text color="$danger">{t('calendar:applicationsLoadFailed')}</Text> : null}
         {!isLoading && !loadError && targets.length === 0 ? (
-          <Text color="$textMuted">暂无可选的应聘记录</Text>
+          <Text color="$textMuted">{t('calendar:noApplications')}</Text>
         ) : null}
         <YStack gap="$sm">
           {targets.map((target) => (
@@ -427,14 +430,14 @@ function SelectionTargetFields({
         </YStack>
       </Field>
       {selectedApplication ? (
-        <Field label="选考步骤 *" error={errors.selectionStepId?.message}>
+        <Field label={`${t('calendar:selectionStep')} *`} error={errors.selectionStepId ? t('calendar:validation.step') : undefined}>
           <YStack gap="$sm">
             {selectedApplication.steps.length === 0 ? (
-              <Text color="$textMuted">该应聘记录尚无选考步骤</Text>
+              <Text color="$textMuted">{t('calendar:noSteps')}</Text>
             ) : null}
             {selectedApplication.steps.length > 0 &&
             selectedApplication.steps.every((step) => step.hasEvent) ? (
-              <Text color="$textMuted">该应聘记录暂无可添加日程的选考步骤</Text>
+              <Text color="$textMuted">{t('calendar:noAvailableSteps')}</Text>
             ) : null}
             {selectedApplication.steps.map((step) => (
               <YStack
@@ -450,10 +453,10 @@ function SelectionTargetFields({
                 style={{ borderRadius: 12 }}
               >
                 <XStack gap="$sm" style={{ justifyContent: 'space-between' }}>
-                  <Text color="$text" fontWeight="600">{step.name}</Text>
-                  <Text color="$textMuted" fontSize={13}>{getStepTypeLabel(step.type)}</Text>
+                  <Text color="$text" fontWeight="600">{getSelectionStepDisplayName(step, t)}</Text>
+                  <Text color="$textMuted" fontSize={13}>{getStepTypeLabel(t, step.type)}</Text>
                 </XStack>
-                {step.hasEvent ? <Text color="$textMuted" fontSize={12}>已有时间事项</Text> : null}
+                {step.hasEvent ? <Text color="$textMuted" fontSize={12}>{t('calendar:hasEvent')}</Text> : null}
               </YStack>
             ))}
           </YStack>

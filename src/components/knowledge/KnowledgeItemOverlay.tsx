@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from 'convex/react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { ScrollView } from 'react-native';
 import { Text, TextArea, XStack, YStack } from 'tamagui';
@@ -15,18 +16,12 @@ import type { KnowledgeCategory, KnowledgeItemData } from './types';
 
 const formSchema = z.object({
   category: z.enum(['qa', 'material', 'reverse_question']),
-  title: z.string().trim().min(1, '请输入标题'),
+  title: z.string().trim().min(1, 'TITLE_REQUIRED'),
   content: z.string(),
   note: z.string(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
-
-const labels: Record<KnowledgeCategory, { title: string; content: string }> = {
-  qa: { title: '问题 *', content: '当前回答' },
-  material: { title: '素材标题 *', content: '素材内容' },
-  reverse_question: { title: '逆質問 *', content: '提问背景' },
-};
 
 export function KnowledgeItemOverlay({
   fixedCategory,
@@ -41,6 +36,7 @@ export function KnowledgeItemOverlay({
   onSaved?: (message: string) => void;
   open: boolean;
 }) {
+  const { t } = useTranslation(['knowledge', 'common']);
   const createItem = useMutation(api.knowledgeItems.create);
   const updateItem = useMutation(api.knowledgeItems.update);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -87,9 +83,9 @@ export function KnowledgeItemOverlay({
       }
       setErrorMessage(null);
       onClose();
-      onSaved?.(item ? '已保存修改' : '已添加知识');
+      onSaved?.(item ? t('knowledge:items.saved') : t('knowledge:items.added'));
     } catch {
-      setErrorMessage('保存失败，请重试');
+      setErrorMessage(t('common:errors.save'));
     }
   }
 
@@ -103,26 +99,26 @@ export function KnowledgeItemOverlay({
         }
       }}
       open={open}
-      title={item ? '编辑知识' : fixedCategory === 'reverse_question' ? '添加逆質問' : '添加知识'}
+      title={item ? t('knowledge:items.edit') : fixedCategory === 'reverse_question' ? t('knowledge:addReverse') : t('knowledge:addKnowledge')}
       width={620}
     >
       <ScrollView keyboardShouldPersistTaps="handled" style={{ flex: 1 }}>
         <YStack gap="$lg" pb="$sm">
           {!fixedCategory ? (
-            <FormField label="类型 *">
+            <FormField label={`${t('knowledge:items.type')} *`}>
               <Controller
                 control={control}
                 name="category"
                 render={({ field }) => (
                   <XStack gap="$sm" flexWrap="wrap">
-                    <Choice label="问题回答" selected={field.value === 'qa'} onPress={() => field.onChange('qa')} />
-                    <Choice label="可用素材" selected={field.value === 'material'} onPress={() => field.onChange('material')} />
+                    <Choice label={t('knowledge:qa')} selected={field.value === 'qa'} onPress={() => field.onChange('qa')} />
+                    <Choice label={t('knowledge:material')} selected={field.value === 'material'} onPress={() => field.onChange('material')} />
                   </XStack>
                 )}
               />
             </FormField>
           ) : null}
-          <FormField label={labels[category].title} error={errors.title?.message}>
+          <FormField label={`${t(`knowledge:items.${category === 'qa' ? 'question' : category === 'material' ? 'materialTitle' : 'reverseTitle'}`)} *`} error={errors.title ? t('knowledge:items.titleRequired') : undefined}>
             <Controller
               control={control}
               name="title"
@@ -131,7 +127,7 @@ export function KnowledgeItemOverlay({
               )}
             />
           </FormField>
-          <FormField label={labels[category].content}>
+          <FormField label={t(`knowledge:items.${category === 'qa' ? 'answer' : category === 'material' ? 'materialContent' : 'reverseContext'}`)}>
             <Controller
               control={control}
               name="content"
@@ -140,7 +136,7 @@ export function KnowledgeItemOverlay({
               )}
             />
           </FormField>
-          <FormField label="补充备注">
+          <FormField label={t('knowledge:items.note')}>
             <Controller
               control={control}
               name="note"
@@ -151,9 +147,9 @@ export function KnowledgeItemOverlay({
           </FormField>
           {errorMessage ? <Text color="$danger">{errorMessage}</Text> : null}
           <XStack gap="$sm" style={{ justifyContent: 'flex-end' }}>
-            <AppButton variant="secondary" disabled={isSubmitting} onPress={() => { setErrorMessage(null); onClose(); }}>取消</AppButton>
+            <AppButton variant="secondary" disabled={isSubmitting} onPress={() => { setErrorMessage(null); onClose(); }}>{t('common:actions.cancel')}</AppButton>
             <AppButton variant="primary" disabled={isSubmitting} onPress={handleSubmit(submit)}>
-              {isSubmitting ? '保存中...' : '保存'}
+              {isSubmitting ? t('common:states.saving') : t('common:actions.save')}
             </AppButton>
           </XStack>
         </YStack>

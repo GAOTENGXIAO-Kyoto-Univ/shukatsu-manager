@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from 'convex/react';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Controller, useForm } from 'react-hook-form';
 import { Text, XStack, YStack } from 'tamagui';
 import { z } from 'zod';
@@ -11,7 +12,7 @@ import { AppButton } from '@/components/ui/AppButton';
 import { AppInput } from '@/components/ui/AppInput';
 
 const displayNameSchema = z.object({
-  displayName: z.string().trim().max(50, '显示名称不能超过 50 个字符'),
+  displayName: z.string().trim().max(50, 'DISPLAY_NAME_TOO_LONG'),
 });
 
 type DisplayNameForm = z.infer<typeof displayNameSchema>;
@@ -27,6 +28,7 @@ export function DisplayNameEditor({
   onClose,
   open,
 }: DisplayNameEditorProps) {
+  const { t } = useTranslation(['profile', 'common']);
   const updateCurrent = useMutation(api.users.updateCurrent);
   const {
     control,
@@ -56,7 +58,7 @@ export function DisplayNameEditor({
       await updateCurrent({ displayName: values.displayName });
       onClose();
     } catch {
-      setError('root', { message: '保存失败，请重试' });
+      setError('root', { message: t('common:errors.save') });
     }
   }
 
@@ -65,20 +67,20 @@ export function DisplayNameEditor({
       headerAction={null}
       onClose={requestClose}
       open={open}
-      title="编辑显示名称"
+      title={t('profile:editDisplayName')}
       width={480}
     >
       <YStack gap="$lg">
         <YStack gap="$sm">
           <Text color="$text" fontWeight="600">
-            显示名称
+            {t('profile:displayName')}
           </Text>
           <Controller
             control={control}
             name="displayName"
             render={({ field }) => (
               <AppInput
-                aria-label="显示名称"
+                aria-label={t('profile:displayName')}
                 autoFocus
                 onBlur={field.onBlur}
                 onChangeText={field.onChange}
@@ -91,11 +93,11 @@ export function DisplayNameEditor({
             )}
           />
           <Text color="$textMuted" fontSize={13}>
-            最多 50 个字符，留空即可清除。
+            {t('profile:displayNameHelp')}
           </Text>
           {errors.displayName?.message ? (
             <Text color="$danger" fontSize={13}>
-              {errors.displayName.message}
+              {t('profile:displayNameTooLong')}
             </Text>
           ) : null}
         </YStack>
@@ -106,14 +108,14 @@ export function DisplayNameEditor({
         ) : null}
         <XStack gap="$sm" style={{ justifyContent: 'flex-end' }}>
           <AppButton disabled={isSubmitting} variant="secondary" onPress={requestClose}>
-            取消
+            {t('common:actions.cancel')}
           </AppButton>
           <AppButton
             disabled={isSubmitting}
             variant="primary"
             onPress={handleSubmit(submit)}
           >
-            {isSubmitting ? '保存中...' : '保存'}
+            {isSubmitting ? t('common:states.saving') : t('common:actions.save')}
           </AppButton>
         </XStack>
       </YStack>

@@ -1,22 +1,18 @@
 import { MoreHorizontal } from '@tamagui/lucide-icons-2';
 import { Fragment } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Text, XStack, YStack } from 'tamagui';
 
 import { AppButton } from '@/components/ui/AppButton';
-import type { InterviewEvaluation, InterviewQuestionData } from './types';
+import type { InterviewQuestionData } from './types';
 
 type InterviewQuestionListProps = {
   items: InterviewQuestionData[];
   onOpenActions: (item: InterviewQuestionData) => void;
 };
 
-const evaluationLabels: Record<InterviewEvaluation, string> = {
-  good: '回答不错',
-  neutral: '一般',
-  poor: '需要改进',
-};
-
 export function InterviewQuestionList({ items, onOpenActions }: InterviewQuestionListProps) {
+  const { t } = useTranslation('interview');
   return (
     <YStack>
       {items.map((item, index) => (
@@ -27,15 +23,15 @@ export function InterviewQuestionList({ items, onOpenActions }: InterviewQuestio
               <Text color="$text" flex={1} fontSize={18} fontWeight="600" lineHeight={27} style={{ overflowWrap: 'anywhere' }}>
                 {index + 1}. {item.question}
               </Text>
-              <AppButton aria-label="问题操作" variant="ghost" icon={<MoreHorizontal size={18} />} onPress={() => onOpenActions(item)} />
+              <AppButton aria-label={t('questionActions')} variant="ghost" icon={<MoreHorizontal size={18} />} onPress={() => onOpenActions(item)} />
             </XStack>
             {item.evaluation ? (
               <XStack bg="$accentSoft" px="$sm" py="$xs" style={{ alignSelf: 'flex-start', borderRadius: 9999 }}>
-                <Text color="$accentStrong" fontSize={12} fontWeight="600">{evaluationLabels[item.evaluation]}</Text>
+                <Text color="$accentStrong" fontSize={12} fontWeight="600">{t(`evaluations.${item.evaluation}`)}</Text>
               </XStack>
             ) : null}
-            {item.answer ? <QuestionBlock label="我的回答" value={item.answer} /> : null}
-            {item.note ? <QuestionBlock label="补充备注" value={item.note} muted /> : null}
+            {item.answer ? <QuestionBlock label={t('myAnswer')} value={item.answer} /> : null}
+            {item.note ? <QuestionBlock label={t('note')} value={item.note} muted /> : null}
           </YStack>
         </Fragment>
       ))}

@@ -1,5 +1,6 @@
 import { MoreHorizontal, Pin } from '@tamagui/lucide-icons-2';
 import { Text, XStack, YStack } from 'tamagui';
+import { useTranslation } from 'react-i18next';
 
 import { AppButton } from '@/components/ui/AppButton';
 import { ResearchMarkdownPreview } from './ResearchMarkdownPreview';
@@ -25,6 +26,7 @@ export function ResearchItemRow({
   onOpen,
   onOpenMenu,
 }: ResearchItemRowProps) {
+  const { t } = useTranslation('research');
   const sourceDomains = getSourceDomains(item.sourceUrls);
   const scope = getResearchScope(item.applicationId);
 
@@ -37,7 +39,7 @@ export function ResearchItemRow({
       style={{ alignItems: 'flex-start' }}
     >
       <YStack
-        aria-label={item.title ? `打开研究：${item.title}` : '打开企业研究'}
+        aria-label={item.title ? t('actions.openNamed', { title: item.title }) : t('actions.open')}
         cursor="pointer"
         flex={1}
         gap="$sm"
@@ -45,9 +47,9 @@ export function ResearchItemRow({
       >
         <XStack flexWrap="wrap" gap="$xs" style={{ alignItems: 'center' }}>
           {item.isPinned ? <Pin color="$accentStrong" fill="$accentStrong" size={14} /> : null}
-          <MetadataLabel label={getResearchCategoryLabel(item.category)} />
+          <MetadataLabel label={getResearchCategoryLabel(t, item.category)} />
           <MetadataLabel
-            label={getResearchScopeLabel(scope, application.companyName, application.jobTitle)}
+            label={getResearchScopeLabel(t, scope, application.companyName, application.jobTitle)}
           />
         </XStack>
         {item.title ? (
@@ -60,18 +62,18 @@ export function ResearchItemRow({
           <XStack flexWrap="wrap" gap="$sm" style={{ alignItems: 'center' }}>
             {sourceDomains.length > 0 ? (
               <Text color="$textMuted" fontSize={12} numberOfLines={1}>
-                来源：{sourceDomains.join(' · ')}
+                {t('sourceDomains', { sources: sourceDomains.join(' · ') })}
               </Text>
             ) : null}
             <Text color="$textMuted" fontSize={12}>
-              {formatRelativeUpdate(item.updatedAt)}
+              {formatRelativeUpdate(t, item.updatedAt)}
             </Text>
           </XStack>
         ) : null}
       </YStack>
       {onOpenMenu ? (
         <AppButton
-          aria-label="研究操作"
+          aria-label={t('actions.menu')}
           variant="ghost"
           icon={<MoreHorizontal size={18} />}
           onPress={() => onOpenMenu(item)}
@@ -111,27 +113,27 @@ function getSourceDomains(sourceUrls: string[] | undefined) {
   return Array.from(domains);
 }
 
-function formatRelativeUpdate(updatedAt: number) {
+function formatRelativeUpdate(t: ReturnType<typeof useTranslation>['t'], updatedAt: number) {
   const elapsed = Math.max(0, Date.now() - updatedAt);
   const minute = 60_000;
   const hour = 60 * minute;
   const day = 24 * hour;
 
   if (elapsed < minute) {
-    return '刚刚更新';
+    return t('justNow');
   }
 
   if (elapsed < hour) {
-    return `${Math.floor(elapsed / minute)} 分钟前更新`;
+    return t('minutesAgo', { count: Math.floor(elapsed / minute) });
   }
 
   if (elapsed < day) {
-    return `${Math.floor(elapsed / hour)} 小时前更新`;
+    return t('hoursAgo', { count: Math.floor(elapsed / hour) });
   }
 
   if (elapsed < 30 * day) {
-    return `${Math.floor(elapsed / day)} 天前更新`;
+    return t('daysAgo', { count: Math.floor(elapsed / day) });
   }
 
-  return `约 ${Math.floor(elapsed / (30 * day))} 个月前更新`;
+  return t('monthsAgo', { count: Math.floor(elapsed / (30 * day)) });
 }

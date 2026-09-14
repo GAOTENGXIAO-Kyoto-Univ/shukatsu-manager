@@ -2,6 +2,7 @@ import type { Id } from '../../../convex/_generated/dataModel';
 import type {
   ApplicationSelectionStatus,
   SelectionStepStatus,
+  SelectionStepPresetKey,
   SelectionStepType,
 } from '@/components/selection/selectionConstants';
 import type { CurrentStageSummary } from '@/components/companies/types';
@@ -23,6 +24,7 @@ export type EventDetail = {
 
 export type NextEvent = Omit<EventDetail, 'createdAt' | 'updatedAt'> & {
   stepName: string;
+  stepPresetKey?: SelectionStepPresetKey;
   stepType: SelectionStepType;
   stepOrder: number;
   isOverdue: boolean;
@@ -32,6 +34,7 @@ export type SelectionStepDetail = {
   selectionStepId: Id<'selectionSteps'>;
   applicationId: Id<'applications'>;
   name: string;
+  presetKey?: SelectionStepPresetKey;
   type: SelectionStepType;
   order: number;
   completed: boolean;

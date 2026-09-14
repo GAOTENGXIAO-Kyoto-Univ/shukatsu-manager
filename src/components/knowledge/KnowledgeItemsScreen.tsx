@@ -2,6 +2,7 @@ import { Plus, Trash2 } from '@tamagui/lucide-icons-2';
 import { useMutation, useQuery_experimental as useQuery } from 'convex/react';
 import { useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Text, XStack, YStack } from 'tamagui';
 
 import { api } from '../../../convex/_generated/api';
@@ -16,6 +17,7 @@ import type { KnowledgeItemData } from './types';
 type Filter = 'all' | 'qa' | 'material';
 
 export function KnowledgeItemsScreen({ reverseOnly = false }: { reverseOnly?: boolean }) {
+  const { t } = useTranslation(['knowledge', 'common']);
   const state = useQuery({ query: api.knowledgeItems.list, args: {} });
   const removeItem = useMutation(api.knowledgeItems.remove);
   const params = useLocalSearchParams<{ item?: string | string[] }>();
@@ -56,7 +58,7 @@ export function KnowledgeItemsScreen({ reverseOnly = false }: { reverseOnly?: bo
       await removeItem({ knowledgeItemId: deleteItem.knowledgeItemId });
       setDeleteItem(null);
     } catch {
-      setDeleteError('删除失败，请重试');
+      setDeleteError(t('common:errors.delete'));
     } finally {
       setDeleting(false);
     }
@@ -65,23 +67,23 @@ export function KnowledgeItemsScreen({ reverseOnly = false }: { reverseOnly?: bo
   return (
     <KnowledgePage>
       <KnowledgeHeader
-        title={reverseOnly ? '逆質問' : '我的知识'}
-        description={reverseOnly ? '整理面试末尾想向企业确认的问题。' : '集中管理问题回答与可复用素材。'}
-        action={<AppButton variant="primary" icon={<Plus size={17} />} onPress={() => openEditor(null)}>{reverseOnly ? '添加逆質問' : '添加知识'}</AppButton>}
+        title={reverseOnly ? t('knowledge:reverse') : t('knowledge:myKnowledge')}
+        description={reverseOnly ? t('knowledge:items.reverseDescription') : t('knowledge:items.description')}
+        action={<AppButton variant="primary" icon={<Plus size={17} />} onPress={() => openEditor(null)}>{reverseOnly ? t('knowledge:addReverse') : t('knowledge:addKnowledge')}</AppButton>}
       />
       <YStack gap="$base">
-        <SearchInput value={search} onChangeText={setSearch} placeholder={reverseOnly ? '搜索逆質問...' : '搜索知识...'} />
+        <SearchInput value={search} onChangeText={setSearch} placeholder={reverseOnly ? t('knowledge:items.searchReverse') : t('knowledge:items.search')} />
         {!reverseOnly ? (
           <XStack gap="$sm" flexWrap="wrap">
-            {([['all', '全部'], ['qa', '问题回答'], ['material', '可用素材']] as const).map(([value, label]) => (
+            {([['all', t('knowledge:items.all')], ['qa', t('knowledge:qa')], ['material', t('knowledge:material')]] as const).map(([value, label]) => (
               <AppButton key={value} variant={filter === value ? 'primary' : 'secondary'} onPress={() => setFilter(value)}>{label}</AppButton>
             ))}
           </XStack>
         ) : null}
       </YStack>
-      {state.status === 'pending' ? <LoadingState message="正在加载知识..." /> : null}
-      {state.status === 'error' ? <MessageState message="知识读取失败，请稍后重试" actionLabel="重试" onAction={() => window.location.reload()} /> : null}
-      {state.status === 'success' && items.length === 0 ? <KnowledgeEmpty message={search.trim() ? '没有符合条件的内容' : reverseOnly ? '还没有逆質問' : '还没有知识内容'} /> : null}
+      {state.status === 'pending' ? <LoadingState message={t('knowledge:items.loading')} /> : null}
+      {state.status === 'error' ? <MessageState message={t('knowledge:items.loadFailed')} actionLabel={t('common:actions.retry')} onAction={() => window.location.reload()} /> : null}
+      {state.status === 'success' && items.length === 0 ? <KnowledgeEmpty message={search.trim() ? t('knowledge:items.noMatches') : reverseOnly ? t('knowledge:noReverse') : t('knowledge:noKnowledge')} /> : null}
       {state.status === 'success' && items.length > 0 ? (
         <YStack gap="$base">
           {items.map((item) => (
@@ -103,7 +105,7 @@ export function KnowledgeItemsScreen({ reverseOnly = false }: { reverseOnly?: bo
         onClose={() => { setEditorOpen(false); setEditingItem(null); }}
         open={editorOpen}
       />
-      <ResponsiveOverlay desktopPresentation="popover" onClose={() => setMenuItem(null)} open={Boolean(menuItem)} title="知识操作" width={320}>
+      <ResponsiveOverlay desktopPresentation="popover" onClose={() => setMenuItem(null)} open={Boolean(menuItem)} title={t('knowledge:items.menu')} width={320}>
         <XStack
           bg="$dangerSoft"
           cursor="pointer"
@@ -114,16 +116,16 @@ export function KnowledgeItemsScreen({ reverseOnly = false }: { reverseOnly?: bo
           style={{ alignItems: 'center', borderRadius: 12 }}
         >
           <Trash2 color="$danger" size={18} />
-          <Text color="$danger" fontWeight="600">{reverseOnly ? '删除逆質問' : '删除知识'}</Text>
+          <Text color="$danger" fontWeight="600">{reverseOnly ? t('knowledge:items.deleteReverse') : t('knowledge:items.deleteKnowledge')}</Text>
         </XStack>
       </ResponsiveOverlay>
-      <ResponsiveOverlay onClose={() => !deleting && setDeleteItem(null)} open={Boolean(deleteItem)} title="确认删除？">
+      <ResponsiveOverlay onClose={() => !deleting && setDeleteItem(null)} open={Boolean(deleteItem)} title={t('knowledge:items.deleteTitle')}>
         <YStack gap="$base">
-          <Text color="$textSecondary" lineHeight={22}>仅删除这条知识内容，不会删除来源面试记录。</Text>
+          <Text color="$textSecondary" lineHeight={22}>{t('knowledge:items.deleteDescription')}</Text>
           {deleteError ? <Text color="$danger">{deleteError}</Text> : null}
           <XStack gap="$sm" style={{ justifyContent: 'flex-end' }}>
-            <AppButton disabled={deleting} onPress={() => setDeleteItem(null)}>取消</AppButton>
-            <AppButton variant="danger" disabled={deleting} onPress={() => void confirmDelete()}>{deleting ? '删除中...' : '删除'}</AppButton>
+            <AppButton disabled={deleting} onPress={() => setDeleteItem(null)}>{t('common:actions.cancel')}</AppButton>
+            <AppButton variant="danger" disabled={deleting} onPress={() => void confirmDelete()}>{deleting ? t('common:states.deleting') : t('common:actions.delete')}</AppButton>
           </XStack>
         </YStack>
       </ResponsiveOverlay>

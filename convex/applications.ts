@@ -18,7 +18,7 @@ import {
 } from "./lib/interviews";
 import { deleteSelectionProgressHistory } from "./lib/selectionProgressHistory";
 
-const duplicateApplicationMessage = "该企业下已存在相同岗位的应聘记录";
+const duplicateApplicationMessage = "APPLICATION_DUPLICATE";
 
 function normalize(value: string) {
   return value.trim().toLowerCase();
@@ -126,6 +126,7 @@ async function toListItem(
           eventId: selectionState.nextEvent.eventId,
           selectionStepId: selectionState.nextEvent.selectionStepId,
           stepName: selectionState.nextEvent.stepName,
+          stepPresetKey: selectionState.nextEvent.stepPresetKey,
           stepType: selectionState.nextEvent.stepType,
           stepOrder: selectionState.nextEvent.stepOrder,
           timingType: selectionState.nextEvent.timingType,
@@ -164,6 +165,7 @@ function toSelectionStepDetail(
     selectionStepId: step._id,
     applicationId: step.applicationId,
     name: step.name,
+    presetKey: step.presetKey,
     type: step.type,
     order: step.order,
     completed: step.completed,

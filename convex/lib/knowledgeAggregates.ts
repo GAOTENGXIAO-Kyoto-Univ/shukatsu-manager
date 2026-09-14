@@ -48,7 +48,11 @@ export async function loadQuestionGroupAggregate(
       note: question.note,
       occurrenceAt: context.event?.datetime ?? question._creationTime,
       company: { companyId: context.company._id, name: context.company.name },
-      selectionStep: { selectionStepId: context.step._id, name: context.step.name },
+      selectionStep: {
+        selectionStepId: context.step._id,
+        name: context.step.name,
+        presetKey: context.step.presetKey,
+      },
       applicationId: context.application._id,
       knowledgeItemId: knowledgeItem?.userId === userId ? knowledgeItem._id : undefined,
     });
@@ -71,6 +75,7 @@ export async function loadQuestionGroupAggregate(
     latestOccurrence: latest.occurrenceAt,
     latestCompanyName: latest.company.name,
     latestStepName: latest.selectionStep.name,
+    latestStepPresetKey: latest.selectionStep.presetKey,
     poorCount: poor.length,
     evaluatedCount: evaluated.length,
     poorRate: evaluated.length === 0 ? 0 : poor.length / evaluated.length,
@@ -118,7 +123,11 @@ export async function loadWeaknessGroupAggregate(
       improvementAction: occurrence.improvementAction,
       occurrenceAt: context.event?.datetime ?? detail._creationTime,
       company: { companyId: context.company._id, name: context.company.name },
-      selectionStep: { selectionStepId: context.step._id, name: context.step.name },
+      selectionStep: {
+        selectionStepId: context.step._id,
+        name: context.step.name,
+        presetKey: context.step.presetKey,
+      },
       applicationId: context.application._id,
     });
   }
@@ -133,6 +142,7 @@ export async function loadWeaknessGroupAggregate(
     latestOccurrence: history[0].occurrenceAt,
     latestCompanyName: history[0].company.name,
     latestStepName: history[0].selectionStep.name,
+    latestStepPresetKey: history[0].selectionStep.presetKey,
     history,
   };
 }

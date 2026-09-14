@@ -1,5 +1,6 @@
 import { GripVertical, MoreHorizontal } from '@tamagui/lucide-icons-2';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PanResponder } from 'react-native';
 import { XStack, YStack, Text } from 'tamagui';
 
@@ -8,6 +9,7 @@ import { warmPaperColors } from '../../../tamagui.config';
 import type { SelectionStepDetail } from '@/components/applications/types';
 import { formatEventSummary } from '@/components/events/eventFormatting';
 import { SelectionStatusBadge } from './SelectionStatusBadge';
+import { getSelectionStepDisplayName } from './selectionConstants';
 
 type SelectionTimelineProps = {
   currentStageId: Id<'selectionSteps'> | null;
@@ -51,6 +53,7 @@ export function SelectionTimeline({
   onOpenStep,
   steps,
 }: SelectionTimelineProps) {
+  const { t } = useTranslation('selection');
   if (steps.length === 0) {
     return null;
   }
@@ -70,6 +73,7 @@ export function SelectionTimeline({
           onOpenStep={onOpenStep}
           reorderable={canMoveStep(steps, step, 'up') || canMoveStep(steps, step, 'down')}
           step={step}
+          t={t}
         />
       ))}
     </YStack>
@@ -85,6 +89,7 @@ function TimelineRow({
   onOpenStep,
   reorderable,
   step,
+  t,
 }: {
   current: boolean;
   first: boolean;
@@ -94,6 +99,7 @@ function TimelineRow({
   onOpenStep: (step: SelectionStepDetail) => void;
   reorderable: boolean;
   step: SelectionStepDetail;
+  t: ReturnType<typeof useTranslation>['t'];
 }) {
   const panResponder = useMemo(
     () =>
@@ -144,13 +150,13 @@ function TimelineRow({
           onPress={() => onOpenStep(step)}
         >
           <Text color="$text" fontSize={16} fontWeight={current ? '600' : '500'}>
-            {step.name}
+            {getSelectionStepDisplayName(step, t)}
           </Text>
           <XStack gap="$sm" style={{ alignItems: 'center' }}>
             <SelectionStatusBadge status={step.status} />
             {locked ? (
               <Text color="$textMuted" fontSize={12}>
-                顺序锁定
+                {t('states.orderLocked')}
               </Text>
             ) : null}
           </XStack>
@@ -171,7 +177,7 @@ function TimelineRow({
           </XStack>
         ) : null}
         <XStack
-          aria-label="步骤操作"
+          aria-label={t('actions.stepActions')}
           cursor="pointer"
           height={36}
           onPress={() => onOpenStep(step)}

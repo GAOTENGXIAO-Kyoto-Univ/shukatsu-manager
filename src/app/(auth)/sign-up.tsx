@@ -1,12 +1,17 @@
 import { Link } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { AuthLanguageSwitcher } from '@/components/i18n/AuthLanguageSwitcher';
+
 export default function SignUpFallbackScreen() {
+  const { t } = useTranslation('auth');
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>注册目前仅支持 Web。</Text>
+      <AuthLanguageSwitcher />
+      <Text style={styles.title}>{t('signUpWebOnly')}</Text>
       <Link href="/sign-in" style={styles.link}>
-        返回登录
+        {t('backToSignIn')}
       </Link>
     </View>
   );

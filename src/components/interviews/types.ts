@@ -1,5 +1,6 @@
 import type { Id } from '../../../convex/_generated/dataModel';
 import type { EventTimingType } from '@/components/applications/types';
+import type { SelectionStepPresetKey } from '@/components/selection/selectionConstants';
 
 export type InterviewFormat = 'online' | 'offline' | 'phone' | 'other';
 export type InterviewEvaluation = 'good' | 'neutral' | 'poor';
@@ -41,6 +42,7 @@ export type InterviewPageData = {
   selectionStep: {
     selectionStepId: Id<'selectionSteps'>;
     name: string;
+    presetKey?: SelectionStepPresetKey;
     type: 'interview';
   };
   event: {

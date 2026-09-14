@@ -2,6 +2,7 @@ import { Plus } from '@tamagui/lucide-icons-2';
 import { useQuery_experimental as useQuery } from 'convex/react';
 import { Href, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Text, XStack, YStack } from 'tamagui';
 
 import { api } from '../../../convex/_generated/api';
@@ -33,6 +34,7 @@ function ResearchSummaryContent({
   application: ResearchApplicationContext;
   onRetry: () => void;
 }) {
+  const { t } = useTranslation(['research', 'common']);
   const router = useRouter();
   const researchState = useQuery({
     query: api.researchItems.listForApplication,
@@ -61,11 +63,11 @@ function ResearchSummaryContent({
       <XStack flexWrap="wrap" gap="$sm" style={{ alignItems: 'center', justifyContent: 'space-between' }}>
         <YStack gap="$xs">
           <Text color="$text" fontSize={22} fontWeight="600">
-            企业研究
+            {t('research:title')}
           </Text>
           {researchState.status === 'success' ? (
             <Text color="$textMuted" fontSize={13}>
-              {items.length} 条记录
+              {t('research:records', { count: items.length })}
             </Text>
           ) : null}
         </YStack>
@@ -76,10 +78,10 @@ function ResearchSummaryContent({
               router.push(`/applications/${application.applicationId}/research` as Href)
             }
           >
-            查看全部
+            {t('research:viewAll')}
           </AppButton>
           <AppButton variant="primary" icon={<Plus size={17} />} onPress={() => setCreateOpen(true)}>
-            添加研究
+            {t('research:add')}
           </AppButton>
         </XStack>
       </XStack>
@@ -88,9 +90,9 @@ function ResearchSummaryContent({
 
       {researchState.status === 'error' ? (
         <YStack gap="$sm" py="$md" style={{ alignItems: 'flex-start' }}>
-          <Text color="$textSecondary">加载失败，请重试</Text>
+          <Text color="$textSecondary">{t('common:errors.load')}</Text>
           <AppButton variant="secondary" onPress={onRetry}>
-            重试
+            {t('common:actions.retry')}
           </AppButton>
         </YStack>
       ) : null}
@@ -98,10 +100,10 @@ function ResearchSummaryContent({
       {researchState.status === 'success' && items.length === 0 ? (
         <YStack gap="$sm" py="$lg">
           <Text color="$text" fontSize={17} fontWeight="600">
-            还没有企业研究
+            {t('research:empty')}
           </Text>
           <Text color="$textSecondary" lineHeight={22}>
-            记录业务、企业文化或志望动机素材。
+            {t('research:emptyDescription')}
           </Text>
         </YStack>
       ) : null}

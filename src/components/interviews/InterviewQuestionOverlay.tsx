@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from 'convex/react';
 import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { ScrollView } from 'react-native';
 import { Text, TextArea, XStack, YStack } from 'tamagui';
 import { z } from 'zod';
@@ -13,7 +14,7 @@ import { analytics } from '@/lib/analytics';
 import type { InterviewEvaluation, InterviewQuestionData } from './types';
 
 const questionSchema = z.object({
-  question: z.string().trim().min(1, '问题不能为空'),
+  question: z.string().trim().min(1, 'QUESTION_REQUIRED'),
   answer: z.string(),
   evaluation: z.enum(['', 'good', 'neutral', 'poor']),
   note: z.string(),
@@ -28,12 +29,7 @@ type InterviewQuestionOverlayProps = {
   selectionStepId: Id<'selectionSteps'>;
 };
 
-const evaluationOptions: { label: string; value: '' | InterviewEvaluation }[] = [
-  { label: '未评价', value: '' },
-  { label: '回答不错', value: 'good' },
-  { label: '一般', value: 'neutral' },
-  { label: '需要改进', value: 'poor' },
-];
+const evaluationOptions: ('' | InterviewEvaluation)[] = ['', 'good', 'neutral', 'poor'];
 
 export function InterviewQuestionOverlay({
   item,
@@ -41,6 +37,7 @@ export function InterviewQuestionOverlay({
   open,
   selectionStepId,
 }: InterviewQuestionOverlayProps) {
+  const { t } = useTranslation(['interview', 'common']);
   const createQuestion = useMutation(api.interviewQuestions.create);
   const updateQuestion = useMutation(api.interviewQuestions.update);
   const {
@@ -82,60 +79,60 @@ export function InterviewQuestionOverlay({
       }
       onClose();
     } catch {
-      setError('root', { message: '保存失败，请重试' });
+      setError('root', { message: t('common:errors.save') });
     }
   }
 
   return (
-    <ResponsiveOverlay mobileNearFullscreen onClose={onClose} open={open} title={item ? '编辑问题' : '添加问题'} width={680}>
+    <ResponsiveOverlay mobileNearFullscreen onClose={onClose} open={open} title={item ? t('interview:editQuestion') : t('interview:addQuestion')} width={680}>
       <ScrollView keyboardShouldPersistTaps="handled" style={{ flex: 1 }}>
         <YStack gap="$lg" pb="$sm">
-          <FormField label="问题 *">
+          <FormField label={`${t('interview:question')} *`}>
             <Controller
               control={control}
               name="question"
               render={({ field }) => (
-                <TextArea minH={96} color="$text" placeholder="记录实际被问到的问题" placeholderTextColor="$textMuted" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} style={{ borderRadius: 12 }} />
+                <TextArea minH={96} color="$text" placeholder={t('interview:placeholders.question')} placeholderTextColor="$textMuted" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} style={{ borderRadius: 12 }} />
               )}
             />
-            {errors.question ? <Text color="$danger">{errors.question.message}</Text> : null}
+            {errors.question ? <Text color="$danger">{t('interview:questionRequired')}</Text> : null}
           </FormField>
-          <FormField label="我的回答">
+          <FormField label={t('interview:myAnswer')}>
             <Controller
               control={control}
               name="answer"
               render={({ field }) => (
-                <TextArea minH={150} color="$text" placeholder="记录自己当时的回答" placeholderTextColor="$textMuted" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} style={{ borderRadius: 12 }} />
+                <TextArea minH={150} color="$text" placeholder={t('interview:placeholders.answer')} placeholderTextColor="$textMuted" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} style={{ borderRadius: 12 }} />
               )}
             />
           </FormField>
-          <FormField label="回答表现">
+          <FormField label={t('interview:performance')}>
             <Controller
               control={control}
               name="evaluation"
               render={({ field }) => (
                 <XStack flexWrap="wrap" gap="$sm">
                   {evaluationOptions.map((option) => (
-                    <EvaluationChoice key={option.value || 'unset'} label={option.label} selected={field.value === option.value} onPress={() => field.onChange(option.value)} />
+                    <EvaluationChoice key={option || 'unset'} label={t(`interview:evaluations.${option || 'unset'}`)} selected={field.value === option} onPress={() => field.onChange(option)} />
                   ))}
                 </XStack>
               )}
             />
           </FormField>
-          <FormField label="补充备注">
+          <FormField label={t('interview:note')}>
             <Controller
               control={control}
               name="note"
               render={({ field }) => (
-                <TextArea minH={120} color="$text" placeholder="面试官的后续追问、现场反应等" placeholderTextColor="$textMuted" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} style={{ borderRadius: 12 }} />
+                <TextArea minH={120} color="$text" placeholder={t('interview:placeholders.note')} placeholderTextColor="$textMuted" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} style={{ borderRadius: 12 }} />
               )}
             />
           </FormField>
           {errors.root?.message ? <Text color="$danger">{errors.root.message}</Text> : null}
           <XStack gap="$sm" style={{ justifyContent: 'flex-end' }}>
-            <AppButton variant="secondary" disabled={isSubmitting} onPress={onClose}>取消</AppButton>
+            <AppButton variant="secondary" disabled={isSubmitting} onPress={onClose}>{t('common:actions.cancel')}</AppButton>
             <AppButton variant="primary" disabled={isSubmitting} onPress={handleSubmit(submit)}>
-              {isSubmitting ? (item ? '保存中...' : '添加中...') : item ? '保存' : '添加'}
+              {isSubmitting ? (item ? t('common:states.saving') : t('common:states.adding')) : item ? t('common:actions.save') : t('common:actions.add')}
             </AppButton>
           </XStack>
         </YStack>

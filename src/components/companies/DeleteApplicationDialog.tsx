@@ -1,5 +1,6 @@
 import { useMutation } from 'convex/react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { XStack, YStack, Text } from 'tamagui';
 
 import { api } from '../../../convex/_generated/api';
@@ -25,6 +26,7 @@ export function DeleteApplicationDialog({
   onClose,
   onDeleted,
 }: DeleteApplicationDialogProps) {
+  const { t } = useTranslation(['companies', 'common']);
   const removeApplication = useMutation(api.applications.remove);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -41,9 +43,9 @@ export function DeleteApplicationDialog({
       await removeApplication({ applicationId: application.applicationId });
       setIsDeleting(false);
       onDeleted();
-    } catch (error) {
+    } catch {
       setIsDeleting(false);
-      setErrorMessage(error instanceof Error ? error.message : '删除失败，请重试');
+      setErrorMessage(t('common:errors.delete'));
     }
   }
 
@@ -55,7 +57,7 @@ export function DeleteApplicationDialog({
   }
 
   return (
-    <ResponsiveOverlay open={Boolean(application)} onClose={close} title="确认删除">
+    <ResponsiveOverlay open={Boolean(application)} onClose={close} title={t('companies:deleteDialog.title')}>
       {application ? (
         <YStack gap="$base">
           <YStack gap="$xs">
@@ -65,16 +67,15 @@ export function DeleteApplicationDialog({
             <Text color="$textSecondary">{application.jobTitle}</Text>
           </YStack>
           <Text color="$textSecondary" lineHeight={22}>
-            该应聘记录下的选考步骤、时间事项、面试记录、复盘和面试问题都会一并删除。
-            企业本身不会被删除。
+            {t('companies:deleteDialog.description')}
           </Text>
           {errorMessage ? <Text color="$danger">{errorMessage}</Text> : null}
           <XStack gap="$sm" style={{ justifyContent: 'flex-end' }}>
             <AppButton variant="secondary" disabled={isDeleting} onPress={close}>
-              取消
+              {t('common:actions.cancel')}
             </AppButton>
             <AppButton variant="danger" disabled={isDeleting} onPress={confirmDelete}>
-              {isDeleting ? '删除中...' : '删除应聘记录'}
+              {isDeleting ? t('common:states.deleting') : t('companies:deleteDialog.action')}
             </AppButton>
           </XStack>
         </YStack>

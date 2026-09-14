@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Portal, XStack, YStack, Text, useMedia } from 'tamagui';
 
 import { warmPaperColors } from '../../../tamagui.config';
@@ -31,6 +32,7 @@ export function ResponsiveOverlay({
   headerAction,
   headerLeading,
 }: ResponsiveOverlayProps) {
+  const { t } = useTranslation('common');
   const media = useMedia();
   const isDesktop = Boolean(media.md);
   const isPopover = isDesktop && desktopPresentation === 'popover';
@@ -86,7 +88,7 @@ export function ResponsiveOverlay({
         }}
       >
         <YStack
-          aria-label="关闭"
+          aria-label={t('actions.close')}
           onPress={() => {
             if (canDismissRef.current) {
               onClose();
@@ -133,7 +135,7 @@ export function ResponsiveOverlay({
             </XStack>
             {headerAction === undefined ? (
               <AppButton variant="ghost" onPress={onClose}>
-                取消
+                {t('actions.cancel')}
               </AppButton>
             ) : (
               headerAction

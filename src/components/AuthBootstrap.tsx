@@ -3,9 +3,11 @@ import { useAuth } from '@clerk/expo';
 import { useMutation } from 'convex/react';
 import { ReactNode, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { AccountMenu } from './AccountMenu';
 import { analytics } from '@/lib/analytics';
+import { i18n, reconcileSignedInLocale } from '@/i18n';
 
 type BootstrapState = 'loading' | 'ready' | 'error';
 
@@ -14,8 +16,10 @@ type AuthBootstrapProps = {
 };
 
 export function AuthBootstrap({ children }: AuthBootstrapProps) {
+  const { t } = useTranslation(['auth', 'common']);
   const { userId } = useAuth();
   const ensureCurrentUser = useMutation(api.users.ensureCurrentUser);
+  const updateLocale = useMutation(api.users.updateLocale);
   const [state, setState] = useState<BootstrapState>('loading');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -31,6 +35,15 @@ export function AuthBootstrap({ children }: AuthBootstrapProps) {
         if (userId) analytics.identify(userId);
         const result = await ensureCurrentUser({});
         if (result.wasCreated) analytics.userSignedUp();
+        const { localeToPersist } = await reconcileSignedInLocale(result.locale);
+
+        if (localeToPersist) {
+          try {
+            await updateLocale({ locale: localeToPersist });
+          } catch {
+            // Keep the locally selected language and retry carry-over on the next authenticated boot.
+          }
+        }
 
         if (isCurrent) {
           setState('ready');
@@ -38,7 +51,7 @@ export function AuthBootstrap({ children }: AuthBootstrapProps) {
       } catch (error) {
         if (isCurrent) {
           setState('error');
-          setErrorMessage(error instanceof Error ? error.message : 'Unknown error');
+          setErrorMessage(error instanceof Error ? error.message : i18n.t('common:errors.operation'));
         }
       }
     }
@@ -48,7 +61,7 @@ export function AuthBootstrap({ children }: AuthBootstrapProps) {
     return () => {
       isCurrent = false;
     };
-  }, [ensureCurrentUser, retryCount, userId]);
+  }, [ensureCurrentUser, retryCount, updateLocale, userId]);
 
   if (state === 'ready') {
     return <>{children}</>;
@@ -57,10 +70,10 @@ export function AuthBootstrap({ children }: AuthBootstrapProps) {
   if (state === 'error') {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>账户初始化失败</Text>
+        <Text style={styles.title}>{t('auth:initializationFailed')}</Text>
         {errorMessage ? <Text style={styles.message}>{errorMessage}</Text> : null}
         <Pressable style={styles.button} onPress={() => setRetryCount((count) => count + 1)}>
-          <Text style={styles.buttonText}>重试</Text>
+          <Text style={styles.buttonText}>{t('common:actions.retry')}</Text>
         </Pressable>
       </View>
     );
@@ -69,28 +82,27 @@ export function AuthBootstrap({ children }: AuthBootstrapProps) {
   return (
     <View style={styles.container}>
       <ActivityIndicator />
-      <Text style={styles.message}>正在初始化账户...</Text>
+      <Text style={styles.message}>{t('auth:initializing')}</Text>
     </View>
   );
 }
 
 export function AuthLoadingState() {
+  const { t } = useTranslation('auth');
   return (
     <View style={styles.container}>
       <ActivityIndicator />
-      <Text style={styles.message}>正在确认登录状态...</Text>
+      <Text style={styles.message}>{t('checking')}</Text>
     </View>
   );
 }
 
 export function ConvexAuthErrorState() {
+  const { t } = useTranslation('auth');
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Convex 登录状态未就绪</Text>
-      <Text style={styles.message}>
-        Clerk 已经登录，但 Convex 还没有接受 Clerk 的认证 token。请确认 Clerk 后台已启用 Convex
-        integration，或已创建名为 convex 的 JWT template。
-      </Text>
+      <Text style={styles.title}>{t('convexNotReady')}</Text>
+      <Text style={styles.message}>{t('convexNotReadyDescription')}</Text>
       <AccountMenu />
     </View>
   );

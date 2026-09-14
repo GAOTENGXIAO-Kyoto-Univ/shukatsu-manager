@@ -2,6 +2,7 @@ import { v } from "convex/values";
 
 import type { QueryCtx, MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
+import { appLocaleValidator } from "./lib/locales";
 
 type CurrentUserCtx = QueryCtx | MutationCtx;
 
@@ -62,6 +63,26 @@ export const updateCurrent = mutation({
   },
 });
 
+export const updateLocale = mutation({
+  args: {
+    locale: appLocaleValidator,
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUserOrThrow(ctx);
+
+    if (user.locale === args.locale) {
+      return user._id;
+    }
+
+    await ctx.db.patch(user._id, {
+      locale: args.locale,
+      updatedAt: Date.now(),
+    });
+
+    return user._id;
+  },
+});
+
 export const ensureCurrentUser = mutation({
   args: {},
   handler: async (ctx) => {
@@ -77,7 +98,7 @@ export const ensureCurrentUser = mutation({
       .unique();
 
     if (existingUser) {
-      return { userId: existingUser._id, wasCreated: false };
+      return { userId: existingUser._id, wasCreated: false, locale: existingUser.locale };
     }
 
     const userId = await ctx.db.insert("users", {
@@ -86,6 +107,6 @@ export const ensureCurrentUser = mutation({
       updatedAt: Date.now(),
     });
 
-    return { userId, wasCreated: true };
+    return { userId, wasCreated: true, locale: undefined };
   },
 });

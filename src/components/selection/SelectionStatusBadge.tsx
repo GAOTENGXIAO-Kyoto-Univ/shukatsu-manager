@@ -1,4 +1,5 @@
 import { Text, XStack } from 'tamagui';
+import { useTranslation } from 'react-i18next';
 
 import { getStatusLabel, type ApplicationSelectionStatus, type SelectionStepStatus } from './selectionConstants';
 
@@ -7,6 +8,7 @@ type SelectionStatusBadgeProps = {
 };
 
 export function SelectionStatusBadge({ status }: SelectionStatusBadgeProps) {
+  const { t } = useTranslation('selection');
   const colors = {
     waiting_schedule: { bg: '$accentSoft', color: '$accentStrong' },
     preparing: { bg: '$infoSoft', color: '$infoStrong' },
@@ -20,7 +22,7 @@ export function SelectionStatusBadge({ status }: SelectionStatusBadgeProps) {
   return (
     <XStack bg={statusColors.bg} px="$sm" py="$xs" style={{ borderRadius: 9999 }}>
       <Text color={statusColors.color} fontSize={12} fontWeight="600">
-        {getStatusLabel(status)}
+        {getStatusLabel(t, status)}
       </Text>
     </XStack>
   );

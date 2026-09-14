@@ -1,11 +1,14 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+import { appLocaleValidator } from "./lib/locales";
+import { selectionStepPresetKeyValidator } from "./lib/selectionPresets";
+
 export default defineSchema({
   users: defineTable({
     authUserId: v.string(),
     displayName: v.optional(v.string()),
-    locale: v.optional(v.string()),
+    locale: v.optional(appLocaleValidator),
     timezone: v.optional(v.string()),
     updatedAt: v.number(),
   }).index("by_authUserId", ["authUserId"]),
@@ -33,6 +36,7 @@ export default defineSchema({
   selectionSteps: defineTable({
     applicationId: v.id("applications"),
     name: v.string(),
+    presetKey: v.optional(selectionStepPresetKeyValidator),
     type: v.union(
       v.literal("es"),
       v.literal("web_test"),

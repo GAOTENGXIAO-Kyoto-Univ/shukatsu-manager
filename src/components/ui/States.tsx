@@ -1,18 +1,20 @@
 import { XStack, YStack, Text, Spinner } from 'tamagui';
+import { useTranslation } from 'react-i18next';
 
 import { AppButton } from './AppButton';
 
 export function EmptyState({ onAdd }: { onAdd: () => void }) {
+  const { t } = useTranslation(['companies', 'common']);
   return (
     <YStack gap="$md" p="$xl" style={{ alignItems: 'center' }}>
       <Text color="$text" fontSize={20} fontWeight="600">
-        还没有应聘记录
+        {t('companies:noApplications')}
       </Text>
       <Text color="$textSecondary" fontSize={15} lineHeight={22} style={{ textAlign: 'center' }}>
-        添加第一条企业和应聘岗位，开始管理你的就活进度。
+        {t('companies:emptyDescription')}
       </Text>
       <AppButton variant="primary" onPress={onAdd}>
-        添加
+        {t('common:actions.add')}
       </AppButton>
     </YStack>
   );

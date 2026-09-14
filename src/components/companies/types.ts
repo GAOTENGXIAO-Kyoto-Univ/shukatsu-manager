@@ -1,6 +1,7 @@
 import type { Id } from '../../../convex/_generated/dataModel';
 import type {
   ApplicationSelectionStatus,
+  SelectionStepPresetKey,
   SelectionStepType,
 } from '@/components/selection/selectionConstants';
 import type { NextEvent } from '@/components/applications/types';
@@ -8,6 +9,7 @@ import type { NextEvent } from '@/components/applications/types';
 export type CurrentStageSummary = {
   selectionStepId: Id<'selectionSteps'>;
   name: string;
+  presetKey?: SelectionStepPresetKey;
   type: SelectionStepType;
   order: number;
 };
@@ -27,6 +29,7 @@ export type ApplicationListItem = {
     | 'eventId'
     | 'selectionStepId'
     | 'stepName'
+    | 'stepPresetKey'
     | 'stepType'
     | 'stepOrder'
     | 'timingType'

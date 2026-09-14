@@ -26,7 +26,7 @@ function normalizeContent(value: string) {
   const trimmed = value.trim();
 
   if (!trimmed) {
-    throw new Error("请输入研究内容");
+    throw new Error("RESEARCH_CONTENT_REQUIRED");
   }
 
   return trimmed;
@@ -50,7 +50,7 @@ function normalizeSourceUrls(values: string[] | undefined) {
         throw new Error("Invalid source protocol");
       }
     } catch {
-      throw new Error("来源链接格式不正确");
+      throw new Error("RESEARCH_SOURCE_URL_INVALID");
     }
 
     seen.add(value);

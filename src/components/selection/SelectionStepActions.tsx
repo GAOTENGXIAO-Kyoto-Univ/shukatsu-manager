@@ -5,6 +5,7 @@ import { Href, useRouter } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import { useState } from 'react';
 import { Linking, ScrollView } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Text, XStack, YStack } from 'tamagui';
 import { z } from 'zod';
 
@@ -20,12 +21,13 @@ import { formatEventSummary } from '@/components/events/eventFormatting';
 import { canMoveStep } from './SelectionTimeline';
 import {
   getStepTypeLabel,
+  getSelectionStepDisplayName,
   selectionStepTypeOptions,
   type SelectionStepType,
 } from './selectionConstants';
 
 const editStepSchema = z.object({
-  name: z.string().trim().min(1, '步骤名称不能为空'),
+  name: z.string().trim().min(1, 'STEP_NAME_REQUIRED'),
   type: z.enum(['es', 'web_test', 'interview', 'briefing', 'group_discussion', 'offer_meeting', 'other']),
 });
 
@@ -46,6 +48,7 @@ export function SelectionStepActions({
   step,
   steps,
 }: SelectionStepActionsProps) {
+  const { t } = useTranslation(['selection', 'common']);
   const router = useRouter();
   const updateStep = useMutation(api.selectionSteps.update);
   const removeStep = useMutation(api.selectionSteps.remove);
@@ -60,14 +63,11 @@ export function SelectionStepActions({
   const [deleteHintStepId, setDeleteHintStepId] = useState<SelectionStepDetail['selectionStepId'] | null>(null);
   const {
     control,
-    formState: { errors, isSubmitting },
+    formState: { dirtyFields, errors, isSubmitting },
     handleSubmit,
     reset,
   } = useForm<EditStepForm>({
-    values: {
-      name: step?.name ?? '',
-      type: (step?.type ?? 'other') as SelectionStepType,
-    },
+    defaultValues: { name: '', type: 'other' },
     resolver: zodResolver(editStepSchema),
   });
 
@@ -76,6 +76,7 @@ export function SelectionStepActions({
   }
 
   const activeStep = step;
+  const displayName = getSelectionStepDisplayName(activeStep, t);
   const canMoveUp = canMoveStep(steps, activeStep, 'up');
   const canMoveDown = canMoveStep(steps, activeStep, 'down');
   const canDelete = !activeStep.completed && activeStep.result === null;
@@ -100,7 +101,7 @@ export function SelectionStepActions({
   async function mutate(
     actionName: string,
     action: () => Promise<void>,
-    failureMessage = '更新失败，请重试',
+    failureMessage = t('selection:messages.updateFailed'),
   ) {
     setPendingAction(actionName);
     setErrorMessage(null);
@@ -118,8 +119,10 @@ export function SelectionStepActions({
     await mutate('edit', async () => {
       await updateStep({
         selectionStepId: activeStep.selectionStepId,
-        name: values.name,
-        type: values.type,
+        ...(dirtyFields.name || (dirtyFields.type && activeStep.presetKey)
+          ? { name: values.name }
+          : {}),
+        ...(dirtyFields.type ? { type: values.type } : {}),
         ...(confirmDeleteInterviewData ? { confirmDeleteInterviewData: true } : {}),
       });
       setPendingTypeChange(null);
@@ -157,7 +160,7 @@ export function SelectionStepActions({
     <ResponsiveOverlay
       open={open}
       onClose={close}
-      title={editingEvent ? (activeStep.event ? '编辑时间事项' : '添加时间事项') : '步骤操作'}
+      title={editingEvent ? (activeStep.event ? t('selection:actions.editEvent') : t('selection:actions.addEvent')) : t('selection:actions.stepActions')}
       desktopPresentation="popover"
       mobileNearFullscreen
       width={480}
@@ -165,7 +168,7 @@ export function SelectionStepActions({
       headerLeading={
         editingEvent ? (
           <AppButton
-            aria-label="返回步骤操作"
+            aria-label={t('selection:actions.stepActions')}
             variant="ghost"
             icon={<ChevronLeft size={18} />}
             onPress={() => {
@@ -191,10 +194,10 @@ export function SelectionStepActions({
       <YStack gap="$base" pb="$sm">
         <YStack gap="$xs">
           <Text color="$text" fontSize={18} fontWeight="600">
-            {step.name}
+            {displayName}
           </Text>
           <Text color="$textMuted" fontSize={13}>
-            {getStepTypeLabel(step.type)}
+            {getStepTypeLabel(t, step.type)}
           </Text>
         </YStack>
 
@@ -202,7 +205,7 @@ export function SelectionStepActions({
           <YStack gap="$base">
             <YStack gap="$sm">
               <Text color="$text" fontWeight="600">
-                步骤名称 *
+                {t('selection:labels.stepName')} *
               </Text>
               <Controller
                 control={control}
@@ -215,7 +218,7 @@ export function SelectionStepActions({
                   />
                 )}
               />
-              {errors.name ? <Text color="$danger">{errors.name.message}</Text> : null}
+              {errors.name ? <Text color="$danger">{t('selection:messages.nameRequired')}</Text> : null}
             </YStack>
             <Controller
               control={control}
@@ -223,7 +226,7 @@ export function SelectionStepActions({
               render={({ field }) => (
                 <YStack gap="$sm">
                   <Text color="$text" fontWeight="600">
-                    步骤类型 *
+                    {t('selection:labels.stepType')} *
                   </Text>
                   <XStack flexWrap="wrap" gap="$sm">
                     {selectionStepTypeOptions.map((option) => (
@@ -241,7 +244,7 @@ export function SelectionStepActions({
                           fontSize={13}
                           fontWeight="600"
                         >
-                          {option.label}
+                          {getStepTypeLabel(t, option.value)}
                         </Text>
                       </XStack>
                     ))}
@@ -251,10 +254,10 @@ export function SelectionStepActions({
             />
             <XStack gap="$sm" style={{ justifyContent: 'flex-end' }}>
               <AppButton variant="secondary" disabled={busy} onPress={() => setEditing(false)}>
-                取消
+                {t('common:actions.cancel')}
               </AppButton>
               <AppButton variant="primary" disabled={busy} onPress={handleSubmit(submitEdit)}>
-                {isSubmitting || pendingAction === 'edit' ? '保存中...' : '保存'}
+                {isSubmitting || pendingAction === 'edit' ? t('common:states.saving') : t('common:actions.save')}
               </AppButton>
             </XStack>
           </YStack>
@@ -262,7 +265,7 @@ export function SelectionStepActions({
           <>
             <XStack gap="$sm" style={{ alignItems: 'center', justifyContent: 'space-between' }}>
               <Text color="$text" fontWeight="600">
-                已完成
+                {t('selection:labels.completed')}
               </Text>
               <AppButton
                 variant={activeStep.completed ? 'primary' : 'secondary'}
@@ -279,19 +282,19 @@ export function SelectionStepActions({
                   })
                 }
               >
-                {activeStep.completed ? '已完成' : '标记完成'}
+                {activeStep.completed ? t('selection:labels.completed') : t('selection:actions.markComplete')}
               </AppButton>
             </XStack>
 
             <YStack gap="$sm">
               <Text color="$text" fontWeight="600">
-                结果
+                {t('selection:labels.result')}
               </Text>
               <XStack gap="$sm" flexWrap="wrap">
                 {[
-                  { label: '未设置', value: null },
-                  { label: '通过', value: 'passed' as const },
-                  { label: '未通过', value: 'failed' as const },
+                  { label: t('selection:result.unset'), value: null },
+                  { label: t('selection:result.passed'), value: 'passed' as const },
+                  { label: t('selection:result.failed'), value: 'failed' as const },
                 ].map((option) => {
                   const selected = activeStep.result === option.value;
 
@@ -325,7 +328,7 @@ export function SelectionStepActions({
             <YStack borderTopColor="$border" borderTopWidth={1} gap="$sm" pt="$base">
               <XStack gap="$sm" style={{ alignItems: 'center' }}>
                 <CalendarClock color="$textSecondary" size={18} />
-                <Text color="$text" fontWeight="600">时间事项</Text>
+                <Text color="$text" fontWeight="600">{t('selection:labels.event')}</Text>
               </XStack>
               {activeStep.event ? (
                 <YStack gap="$sm">
@@ -333,31 +336,31 @@ export function SelectionStepActions({
                     {formatEventSummary(activeStep.event)}
                   </Text>
                   {activeStep.event.location ? (
-                    <EventInfo label="地点" value={activeStep.event.location} />
+                    <EventInfo label={t('selection:labels.location')} value={activeStep.event.location} />
                   ) : null}
                   {activeStep.event.meetingUrl ? (
                     <YStack gap="$xs">
-                      <Text color="$textMuted" fontSize={13}>会议链接</Text>
+                      <Text color="$textMuted" fontSize={13}>{t('selection:labels.meetingUrl')}</Text>
                       <AppButton
                         variant="ghost"
                         icon={<ExternalLink size={15} />}
                         onPress={() => void Linking.openURL(activeStep.event?.meetingUrl ?? '')}
                         style={{ alignSelf: 'flex-start' }}
                       >
-                        加入会议
+                        {t('selection:actions.joinMeeting')}
                       </AppButton>
                     </YStack>
                   ) : null}
                   {activeStep.event.note ? (
-                    <EventInfo label="备注" value={activeStep.event.note} />
+                    <EventInfo label={t('selection:labels.note')} value={activeStep.event.note} />
                   ) : null}
                   {confirmingEventDelete ? (
                     <YStack bg="$dangerSoft" gap="$sm" p="$md" style={{ borderRadius: 8 }}>
-                      <Text color="$text" fontWeight="600">删除时间事项？</Text>
-                      <Text color="$textSecondary" fontSize={13}>删除后，该选考步骤本身会保留。</Text>
+                      <Text color="$text" fontWeight="600">{t('selection:messages.eventDeleteTitle')}</Text>
+                      <Text color="$textSecondary" fontSize={13}>{t('selection:messages.eventDeleteDescription')}</Text>
                       <XStack gap="$sm" style={{ justifyContent: 'flex-end' }}>
                         <AppButton variant="secondary" disabled={busy} onPress={() => setConfirmingEventDelete(false)}>
-                          取消
+                          {t('common:actions.cancel')}
                         </AppButton>
                         <AppButton
                           variant="danger"
@@ -367,27 +370,27 @@ export function SelectionStepActions({
                               if (!activeStep.event) return;
                               await removeEvent({ eventId: activeStep.event.eventId });
                               setConfirmingEventDelete(false);
-                            }, '删除失败，请重试')
+                            }, t('selection:messages.deleteFailed'))
                           }
                         >
-                          {pendingAction === 'delete-event' ? '删除中...' : '删除'}
+                          {pendingAction === 'delete-event' ? t('common:states.deleting') : t('common:actions.delete')}
                         </AppButton>
                       </XStack>
                     </YStack>
                   ) : (
                     <XStack flexWrap="wrap" gap="$sm">
                       <AppButton variant="secondary" disabled={busy} onPress={() => setEditingEvent(true)}>
-                        编辑时间事项
+                        {t('selection:actions.editEvent')}
                       </AppButton>
                       <AppButton variant="ghost" color="$danger" disabled={busy} onPress={() => setConfirmingEventDelete(true)}>
-                        删除时间事项
+                        {t('selection:actions.deleteEvent')}
                       </AppButton>
                     </XStack>
                   )}
                 </YStack>
               ) : (
                 <YStack gap="$sm">
-                  <Text color="$textMuted">暂无时间事项</Text>
+                  <Text color="$textMuted">{t('selection:states.noEvent')}</Text>
                   <AppButton
                     variant="secondary"
                     icon={<CalendarClock size={16} />}
@@ -395,7 +398,7 @@ export function SelectionStepActions({
                     onPress={() => setEditingEvent(true)}
                     style={{ alignSelf: 'flex-start' }}
                   >
-                    添加时间事项
+                    {t('selection:actions.addEvent')}
                   </AppButton>
                 </YStack>
               )}
@@ -405,10 +408,10 @@ export function SelectionStepActions({
               <YStack borderTopColor="$border" borderTopWidth={1} gap="$sm" pt="$base">
                 <XStack gap="$sm" style={{ alignItems: 'center' }}>
                   <MessageSquareText color="$textSecondary" size={18} />
-                  <Text color="$text" fontWeight="600">面试复盘</Text>
+                  <Text color="$text" fontWeight="600">{t('selection:labels.interviewReview')}</Text>
                 </XStack>
                 <Text color="$textMuted" fontSize={13} lineHeight={20}>
-                  记录面试信息、复盘内容和实际被问到的问题。
+                  {t('selection:messages.interviewDescription')}
                 </Text>
                 <AppButton
                   variant="secondary"
@@ -420,13 +423,13 @@ export function SelectionStepActions({
                   }}
                   style={{ alignSelf: 'flex-start' }}
                 >
-                  {activeStep.hasInterviewDetail ? '查看面试复盘' : '记录面试'}
+                  {activeStep.hasInterviewDetail ? t('selection:actions.viewInterview') : t('selection:actions.recordInterview')}
                 </AppButton>
               </YStack>
             ) : null}
 
-            <AppButton variant="secondary" disabled={busy} onPress={() => setEditing(true)}>
-              编辑步骤
+            <AppButton variant="secondary" disabled={busy} onPress={() => { reset({ name: displayName, type: activeStep.type as SelectionStepType }); setEditing(true); }}>
+              {t('selection:actions.editStep')}
             </AppButton>
 
             <XStack gap="$sm">
@@ -445,7 +448,7 @@ export function SelectionStepActions({
                 style={moveUpUnavailable ? unavailableMoveButtonStyle : undefined}
                 textProps={moveUpUnavailable ? { cursor: 'not-allowed' } : undefined}
               >
-                上移
+                {t('selection:actions.moveUp')}
               </AppButton>
               <AppButton
                 variant="secondary"
@@ -462,21 +465,21 @@ export function SelectionStepActions({
                 style={moveDownUnavailable ? unavailableMoveButtonStyle : undefined}
                 textProps={moveDownUnavailable ? { cursor: 'not-allowed' } : undefined}
               >
-                下移
+                {t('selection:actions.moveDown')}
               </AppButton>
             </XStack>
 
             {confirmingStepDelete && canDelete ? (
               <YStack bg="$dangerSoft" gap="$sm" p="$md" style={{ borderRadius: 8 }}>
-                <Text color="$text" fontWeight="600">删除「{activeStep.name}」？</Text>
+                <Text color="$text" fontWeight="600">{t('selection:messages.deleteStepTitle', { name: displayName })}</Text>
                 <Text color="$textSecondary" fontSize={13} lineHeight={20}>
                   {activeStep.hasInterviewDetail
-                    ? '该步骤关联的时间事项、面试记录、问题和复盘内容也会一并删除。此操作无法撤销。'
-                    : '该步骤关联的时间事项也会一并删除。此操作无法撤销。'}
+                    ? t('selection:messages.deleteStepWithInterview')
+                    : t('selection:messages.deleteStepWithoutInterview')}
                 </Text>
                 <XStack gap="$sm" style={{ justifyContent: 'flex-end' }}>
                   <AppButton variant="secondary" disabled={busy} onPress={() => setConfirmingStepDelete(false)}>
-                    取消
+                    {t('common:actions.cancel')}
                   </AppButton>
                   <AppButton
                     variant="danger"
@@ -485,10 +488,10 @@ export function SelectionStepActions({
                       void mutate('delete', async () => {
                         await removeStep({ selectionStepId: activeStep.selectionStepId });
                         close();
-                      }, '删除失败，请重试')
+                      }, t('selection:messages.deleteFailed'))
                     }
                   >
-                    {pendingAction === 'delete' ? '删除中...' : '删除'}
+                    {pendingAction === 'delete' ? t('common:states.deleting') : t('common:actions.delete')}
                   </AppButton>
                 </XStack>
               </YStack>
@@ -509,12 +512,12 @@ export function SelectionStepActions({
                 style={deleteUnavailable ? unavailableDeleteButtonStyle : undefined}
                 textProps={deleteUnavailable ? { cursor: 'not-allowed' } : undefined}
               >
-                删除步骤
+                {t('selection:actions.deleteStep')}
               </AppButton>
             )}
             {showDeleteHint ? (
               <Text color="$textMuted" fontSize={13}>
-                已完成的步骤需要先取消完成并清空结果后才能删除。
+                {t('selection:messages.deleteLocked')}
               </Text>
             ) : null}
           </>
@@ -528,17 +531,16 @@ export function SelectionStepActions({
     <ResponsiveOverlay
       open={Boolean(pendingTypeChange)}
       onClose={() => setPendingTypeChange(null)}
-      title="修改步骤类型？"
+      title={t('selection:messages.changeTypeTitle')}
     >
       <YStack gap="$base">
         <Text color="$textSecondary" lineHeight={22}>
-          该步骤已有面试复盘。修改为非面试类型后，面试信息、问题和复盘内容都会被删除。
-          此操作无法撤销。
+          {t('selection:messages.changeTypeDescription')}
         </Text>
         {errorMessage ? <Text color="$danger">{errorMessage}</Text> : null}
         <XStack gap="$sm" style={{ justifyContent: 'flex-end' }}>
           <AppButton variant="secondary" disabled={busy} onPress={() => setPendingTypeChange(null)}>
-            取消
+            {t('common:actions.cancel')}
           </AppButton>
           <AppButton
             variant="danger"
@@ -549,7 +551,7 @@ export function SelectionStepActions({
               }
             }}
           >
-            {pendingAction === 'edit' ? '修改中...' : '确认修改'}
+            {pendingAction === 'edit' ? t('selection:states.updating') : t('selection:actions.confirmChange')}
           </AppButton>
         </XStack>
       </YStack>

@@ -1,6 +1,7 @@
 import { ChevronLeft } from '@tamagui/lucide-icons-2';
 import { Href, useRouter } from 'expo-router';
 import { ScrollView } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Text, XStack, YStack } from 'tamagui';
 
 import { AppButton } from '@/components/ui/AppButton';
@@ -43,10 +44,11 @@ export function KnowledgeHeader({
   title: string;
 }) {
   const router = useRouter();
+  const { t } = useTranslation('common');
   return (
     <YStack borderBottomColor="$border" borderBottomWidth={1} gap="$base" pb="$lg" pt="$md">
       <AppButton variant="ghost" icon={<ChevronLeft size={18} />} onPress={() => router.push(backHref)} style={{ alignSelf: 'flex-start' }}>
-        返回
+        {t('actions.back')}
       </AppButton>
       <XStack gap="$base" flexWrap="wrap" style={{ alignItems: 'flex-end', justifyContent: 'space-between' }}>
         <YStack flex={1} gap="$xs" style={{ minWidth: 240 }}>

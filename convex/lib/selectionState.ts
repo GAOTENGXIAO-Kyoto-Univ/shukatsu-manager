@@ -109,6 +109,7 @@ export function deriveApplicationSelectionState(
           eventId: selected.event._id,
           selectionStepId: selected.step._id,
           stepName: selected.step.name,
+          stepPresetKey: selected.step.presetKey,
           stepType: selected.step.type,
           stepOrder: selected.step.order,
           timingType: selected.event.timingType,
@@ -127,6 +128,7 @@ function toCurrentStage(step: Doc<"selectionSteps">) {
   return {
     selectionStepId: step._id,
     name: step.name,
+    presetKey: step.presetKey,
     type: step.type,
     order: step.order,
   };

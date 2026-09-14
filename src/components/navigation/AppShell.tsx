@@ -7,28 +7,30 @@ import {
 } from '@tamagui/lucide-icons-2';
 import { Href, Link, usePathname } from 'expo-router';
 import { ReactNode } from 'react';
+import { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { XStack, YStack, Text, useMedia } from 'tamagui';
 
 const sidebarWidth = 216;
 
 type NavigationItem = {
   href: Href;
-  label: string;
+  labelKey: string;
   match: (pathname: string) => boolean;
   icon: typeof Home;
 };
 
 const navigationItems: NavigationItem[] = [
-  { href: '/', label: '首页', match: (path) => path === '/', icon: Home },
+  { href: '/', labelKey: 'home', match: (path) => path === '/', icon: Home },
   {
     href: '/companies',
-    label: '企业',
+    labelKey: 'companies',
     match: (path) => path === '/companies' || path.startsWith('/applications'),
     icon: Building2,
   },
-  { href: '/calendar', label: '日历', match: (path) => path === '/calendar', icon: CalendarDays },
-  { href: '/knowledge', label: '知识库', match: (path) => path.startsWith('/knowledge'), icon: BookOpen },
-  { href: '/profile', label: '我的', match: (path) => path === '/profile', icon: UserIcon },
+  { href: '/calendar', labelKey: 'calendar', match: (path) => path === '/calendar', icon: CalendarDays },
+  { href: '/knowledge', labelKey: 'knowledge', match: (path) => path.startsWith('/knowledge'), icon: BookOpen },
+  { href: '/profile', labelKey: 'profile', match: (path) => path === '/profile', icon: UserIcon },
 ];
 
 type AppShellProps = {
@@ -55,6 +57,7 @@ export function AppShell({ children }: AppShellProps) {
 }
 
 function DesktopSidebar() {
+  const { t } = useTranslation('common');
   const pathname = usePathname();
 
   return (
@@ -74,15 +77,15 @@ function DesktopSidebar() {
     >
       <YStack gap="$xs" px="$sm" pt="$sm">
         <Text color="$text" fontSize={18} fontWeight="600">
-          就活管理
+          {t('brand.title')}
         </Text>
         <Text color="$textMuted" fontSize={12}>
-          Shukatsu Manager
+          {t('brand.subtitle')}
         </Text>
       </YStack>
       <YStack gap="$xs">
         {navigationItems.map((item) => (
-          <NavLink key={item.label} item={item} active={item.match(pathname)} desktop />
+          <NavLink key={item.labelKey} item={item} active={item.match(pathname)} desktop t={t} />
         ))}
       </YStack>
     </YStack>
@@ -90,6 +93,7 @@ function DesktopSidebar() {
 }
 
 function MobileBottomNav() {
+  const { t } = useTranslation('common');
   const pathname = usePathname();
 
   return (
@@ -110,7 +114,7 @@ function MobileBottomNav() {
       }}
     >
       {navigationItems.map((item) => (
-        <NavLink key={item.label} item={item} active={item.match(pathname)} />
+        <NavLink key={item.labelKey} item={item} active={item.match(pathname)} t={t} />
       ))}
     </XStack>
   );
@@ -120,10 +124,12 @@ function NavLink({
   active,
   desktop = false,
   item,
+  t,
 }: {
   active: boolean;
   desktop?: boolean;
   item: NavigationItem;
+  t: TFunction;
 }) {
   const Icon = item.icon;
 
@@ -153,7 +159,7 @@ function NavLink({
           fontSize={desktop ? 15 : 11}
           fontWeight={active ? '600' : '500'}
         >
-          {item.label}
+          {t(`navigation.${item.labelKey}`)}
         </Text>
       </XStack>
     </Link>

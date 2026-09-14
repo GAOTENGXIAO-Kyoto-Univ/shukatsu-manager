@@ -2,6 +2,7 @@ import { ChevronLeft, Plus, Search } from '@tamagui/lucide-icons-2';
 import { useQuery_experimental as useQuery } from 'convex/react';
 import { Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView } from 'react-native';
 import { Text, XStack, YStack } from 'tamagui';
 
@@ -33,6 +34,7 @@ function readRouteParam(value: string | string[] | undefined) {
 }
 
 export default function ResearchScreen() {
+  const { t } = useTranslation(['research', 'companies', 'common']);
   const params = useLocalSearchParams();
   const router = useRouter();
   const applicationId = readRouteParam(params.applicationId);
@@ -55,7 +57,7 @@ export default function ResearchScreen() {
   if (!applicationId) {
     return (
       <PageFrame>
-        <MessageState message="应聘记录不存在" actionLabel="返回企业" onAction={returnToApplication} />
+        <MessageState message={t('companies:detail.missing')} actionLabel={t('companies:detail.back')} onAction={returnToApplication} />
       </PageFrame>
     );
   }
@@ -63,7 +65,7 @@ export default function ResearchScreen() {
   if (applicationState.status === 'pending') {
     return (
       <PageFrame>
-        <LoadingState message="正在读取企业研究..." />
+        <LoadingState message={t('research:loading')} />
       </PageFrame>
     );
   }
@@ -71,7 +73,7 @@ export default function ResearchScreen() {
   if (applicationState.status === 'error') {
     return (
       <PageFrame>
-        <MessageState message="加载失败，请重试" actionLabel="返回应聘详情" onAction={returnToApplication} />
+        <MessageState message={t('common:errors.load')} actionLabel={t('interview:back')} onAction={returnToApplication} />
       </PageFrame>
     );
   }
@@ -79,7 +81,7 @@ export default function ResearchScreen() {
   if (!applicationState.data) {
     return (
       <PageFrame>
-        <MessageState message="应聘记录不存在，或你没有访问权限" actionLabel="返回企业" onAction={returnToApplication} />
+        <MessageState message={t('companies:detail.forbidden')} actionLabel={t('companies:detail.back')} onAction={returnToApplication} />
       </PageFrame>
     );
   }
@@ -120,6 +122,7 @@ function ResearchWorkspace({
   onBack: () => void;
   onRetry: () => void;
 }) {
+  const { t } = useTranslation(['research', 'common']);
   const researchState = useQuery({
     query: api.researchItems.listForApplication,
     args: { applicationId: application.applicationId },
@@ -198,14 +201,14 @@ function ResearchWorkspace({
             <XStack flexWrap="wrap" gap="$base" style={{ alignItems: 'center', justifyContent: 'space-between' }}>
               <YStack gap="$xs">
                 <Text color="$text" fontSize={30} fontWeight="600" lineHeight={38}>
-                  企业研究
+                  {t('research:title')}
                 </Text>
                 {researchState.status === 'success' ? (
-                  <Text color="$textMuted">{items.length} 条记录</Text>
+                  <Text color="$textMuted">{t('research:records', { count: items.length })}</Text>
                 ) : null}
               </YStack>
               <AppButton variant="primary" icon={<Plus size={18} />} onPress={() => setCreateOpen(true)}>
-                添加研究
+                {t('research:add')}
               </AppButton>
             </XStack>
           </YStack>
@@ -217,33 +220,33 @@ function ResearchWorkspace({
             <AppInput
               flex={1}
               pl="$xl"
-              placeholder="搜索企业研究..."
+              placeholder={t('research:search')}
               value={searchKeyword}
               onChangeText={setSearchKeyword}
             />
           </XStack>
 
           <YStack borderBottomColor="$border" borderBottomWidth={1} gap="$md" pb="$lg">
-            <FilterGroup label="分类">
-              <FilterOption label="全部" selected={category === 'all'} onPress={() => setCategory('all')} />
+            <FilterGroup label={t('research:category')}>
+              <FilterOption label={t('research:all')} selected={category === 'all'} onPress={() => setCategory('all')} />
               {researchCategoryOptions.map((option) => (
                 <FilterOption
-                  key={option.value}
-                  label={option.label}
-                  selected={category === option.value}
-                  onPress={() => setCategory(option.value)}
+                  key={option}
+                  label={t(`research:categories.${option}`)}
+                  selected={category === option}
+                  onPress={() => setCategory(option)}
                 />
               ))}
             </FilterGroup>
-            <FilterGroup label="范围">
-              <FilterOption label="全部" selected={scope === 'all'} onPress={() => setScope('all')} />
+            <FilterGroup label={t('research:scope')}>
+              <FilterOption label={t('research:all')} selected={scope === 'all'} onPress={() => setScope('all')} />
               <FilterOption
-                label={`${application.company.name} 共通`}
+                label={t('research:companyShared', { company: application.company.name })}
                 selected={scope === 'company'}
                 onPress={() => setScope('company')}
               />
               <FilterOption
-                label="当前应聘专属"
+                label={t('research:applicationOnly')}
                 selected={scope === 'application'}
                 onPress={() => setScope('application')}
               />
@@ -253,27 +256,27 @@ function ResearchWorkspace({
           {researchState.status === 'pending' ? <ResearchListSkeleton /> : null}
 
           {researchState.status === 'error' ? (
-            <MessageState message="加载失败，请重试" actionLabel="重试" onAction={onRetry} />
+            <MessageState message={t('common:errors.load')} actionLabel={t('common:actions.retry')} onAction={onRetry} />
           ) : null}
 
           {researchState.status === 'success' && items.length === 0 ? (
             <YStack gap="$md" py="$xl" style={{ alignItems: 'center' }}>
               <Text color="$text" fontSize={20} fontWeight="600">
-                还没有企业研究
+                {t('research:empty')}
               </Text>
               <Text color="$textSecondary" lineHeight={22} style={{ textAlign: 'center' }}>
-                记录业务、企业文化或志望动机素材。
+                {t('research:emptyDescription')}
               </Text>
               <AppButton variant="primary" onPress={() => setCreateOpen(true)}>
-                添加研究
+                {t('research:add')}
               </AppButton>
             </YStack>
           ) : null}
 
           {researchState.status === 'success' && items.length > 0 && filteredItems.length === 0 ? (
             <MessageState
-              message="没有符合当前条件的研究"
-              actionLabel="清除筛选"
+              message={t('research:noMatches')}
+              actionLabel={t('research:clear')}
               onAction={clearConditions}
             />
           ) : null}
@@ -294,7 +297,7 @@ function ResearchWorkspace({
 
           {hasConditions && researchState.status === 'success' && filteredItems.length > 0 ? (
             <AppButton variant="secondary" onPress={clearConditions} style={{ alignSelf: 'flex-start' }}>
-              清除筛选
+              {t('research:clear')}
             </AppButton>
           ) : null}
         </YStack>
@@ -333,7 +336,7 @@ function ResearchWorkspace({
         onClose={() => setDeleteItemId(null)}
         onDeleted={() => {
           setDeleteItemId(null);
-          setToastMessage('企业研究已删除');
+          setToastMessage(t('research:deleted'));
         }}
       />
       <AppToast message={toastMessage} />

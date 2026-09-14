@@ -13,6 +13,7 @@ import {
 import { useQuery_experimental as useQuery } from 'convex/react';
 import { Href, useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Text, TooltipSimple, XStack, YStack, useMedia } from 'tamagui';
 
 import { api } from '../../../convex/_generated/api';
@@ -25,6 +26,8 @@ import {
 } from '@/components/events/eventFormatting';
 import { AppButton } from '@/components/ui/AppButton';
 import { useRetainedQueryData } from '@/hooks/useRetainedQueryData';
+import { getCurrentAppLocale } from '@/i18n';
+import { getSelectionStepDisplayName, type SelectionStepPresetKey } from '@/components/selection/selectionConstants';
 
 type UpcomingItem = {
   eventId: Id<'events'>;
@@ -37,22 +40,14 @@ type UpcomingItem = {
   companyName?: string;
   jobTitle?: string;
   selectionStepName?: string;
+  selectionStepPresetKey?: SelectionStepPresetKey;
   applicationId?: Id<'applications'>;
   selectionStepId?: Id<'selectionSteps'>;
 };
 
 const groupOrder = ['today', 'tomorrow', 'future'] as const;
-const groupLabels = {
-  today: '今天',
-  tomorrow: '明天',
-  future: '未来7天内',
-} as const;
-const weekdayFormatter = new Intl.DateTimeFormat('zh-CN', {
-  timeZone: eventTimeZone,
-  weekday: 'short',
-});
-
 export function UpcomingItemsSection({ timeBucket }: { timeBucket: number }) {
+  const { t } = useTranslation(['dashboard', 'common', 'selection']);
   const router = useRouter();
   const [retryToken, setRetryToken] = useState(0);
   const state = useQuery({
@@ -63,21 +58,21 @@ export function UpcomingItemsSection({ timeBucket }: { timeBucket: number }) {
   const showAllAction =
     retained.hasData && retained.data.hasMore ? (
       <AppButton
-        aria-label="查看全部近期事项"
+        aria-label={t('dashboard:viewAllUpcoming')}
         iconAfter={<ChevronRight size={16} />}
         variant="ghost"
         onPress={() => router.push('/calendar' as Href)}
       >
-        查看全部
+        {t('dashboard:viewAll')}
       </AppButton>
     ) : null;
 
   return (
     <DashboardSection
       action={showAllAction}
-      description="未来 7 天内的事项"
+      description={t('dashboard:upcomingDescription')}
       icon={<CalendarDays color="$text" size={22} />}
-      title="近期事项"
+      title={t('dashboard:upcoming')}
     >
       {state.status === 'error' ? (
         <ModuleRetry
@@ -87,7 +82,7 @@ export function UpcomingItemsSection({ timeBucket }: { timeBucket: number }) {
       ) : null}
       {state.status === 'pending' && !retained.hasData ? <UpcomingSkeleton /> : null}
       {retained.hasData && retained.data.items.length === 0 ? (
-        <InlineEmpty message="未来 7 天暂无事项" />
+        <InlineEmpty message={t('dashboard:noUpcoming')} />
       ) : null}
       {retained.hasData && retained.data.items.length > 0 ? (
         <YStack gap="$md">
@@ -98,7 +93,7 @@ export function UpcomingItemsSection({ timeBucket }: { timeBucket: number }) {
             return (
               <YStack key={group} gap="$sm">
                 <Text color="$textMuted" fontSize={13} fontWeight="600">
-                  {groupLabels[group]}
+                  {t(`dashboard:groups.${group}`)}
                 </Text>
                 <YStack gap="$sm">
                   {items.map((item) => (
@@ -135,6 +130,7 @@ function UpcomingRow({
   item: UpcomingItem;
   onOpenSelection: () => void;
 }) {
+  const { t } = useTranslation(['dashboard', 'common', 'selection']);
   const media = useMedia();
   const isDesktop = Boolean(media.md);
   const isSelection =
@@ -167,7 +163,7 @@ function UpcomingRow({
           {formatEventMonthDay(item.datetime)}
         </Text>
         <Text color="$textMuted" fontSize={11}>
-          {weekdayFormatter.format(new Date(item.datetime))}
+          {new Intl.DateTimeFormat(getCurrentAppLocale(), { timeZone: eventTimeZone, weekday: 'short' }).format(new Date(item.datetime))}
         </Text>
       </YStack>
       <YStack
@@ -196,17 +192,18 @@ function UpcomingRow({
         </Text>
         {isSelection ? (
           <Text color="$textSecondary" fontSize={isDesktop ? 14 : 12} numberOfLines={1}>
-            {item.selectionStepName}{item.timingType === 'deadline' ? ' 截止' : ''}
+            {getSelectionStepDisplayName({ name: item.selectionStepName ?? '', presetKey: item.selectionStepPresetKey }, t)}
+            {item.timingType === 'deadline' ? ` ${t('common:eventTiming.deadlineSuffix')}` : ''}
           </Text>
         ) : null}
       </YStack>
       <Text color="$textSecondary" fontSize={isDesktop ? 13 : 12} fontWeight="600">
-        {formatUpcomingTime(item)}
+        {formatUpcomingTime(item, t('common:eventTiming.deadlinePrefix'))}
       </Text>
       {isSelection ? (
-        <TooltipSimple label="跳转至对应选考页面">
+        <TooltipSimple label={t('dashboard:openSelection')}>
           <AppButton
-            aria-label="跳转至对应选考页面"
+            aria-label={t('dashboard:openSelection')}
             icon={<ChevronRight size={18} />}
             variant="ghost"
             onPress={onOpenSelection}
@@ -217,17 +214,18 @@ function UpcomingRow({
   );
 }
 
-function formatUpcomingTime(item: UpcomingItem) {
+function formatUpcomingTime(item: UpcomingItem, deadlineLabel: string) {
   if (item.timingType === 'scheduled') {
     return formatEventTime(item.datetime);
   }
   if (item.hasExplicitTime) {
-    return `截止 ${formatEventTime(item.datetime)}`;
+    return `${deadlineLabel} ${formatEventTime(item.datetime)}`;
   }
-  return '截止';
+  return deadlineLabel;
 }
 
 export function SelectionSummarySection({ timeBucket }: { timeBucket: number }) {
+  const { t } = useTranslation('dashboard');
   const router = useRouter();
   const media = useMedia();
   const isDesktop = Boolean(media.md);
@@ -240,10 +238,10 @@ export function SelectionSummarySection({ timeBucket }: { timeBucket: number }) 
   const metrics = retained.hasData
     ? [
         {
-          label: '选考中',
-          helper: '正在推进的选考',
+          label: t('metrics.active.label'),
+          helper: t('metrics.active.helper'),
           count: retained.data.activeCount,
-          tooltip: '显示所有「选考中」',
+          tooltip: t('metrics.active.tooltip'),
           href: '/companies?status=active',
           background: '$infoSoft' as const,
           accent: '$infoStrong' as const,
@@ -251,10 +249,10 @@ export function SelectionSummarySection({ timeBucket }: { timeBucket: number }) 
           icon: <BriefcaseBusiness color="$infoStrong" size={isDesktop ? 22 : 18} />,
         },
         {
-          label: '面试中',
-          helper: '进行中的面试',
+          label: t('metrics.interview.label'),
+          helper: t('metrics.interview.helper'),
           count: retained.data.interviewCount,
-          tooltip: '显示所有「面试中」',
+          tooltip: t('metrics.interview.tooltip'),
           href: '/companies?stage=interview',
           background: '$accentSoft' as const,
           accent: '$accentStrong' as const,
@@ -262,10 +260,10 @@ export function SelectionSummarySection({ timeBucket }: { timeBucket: number }) 
           icon: <MessageSquareText color="$accentStrong" size={isDesktop ? 22 : 18} />,
         },
         {
-          label: '等待中',
-          helper: '等待结果的选考',
+          label: t('metrics.waiting.label'),
+          helper: t('metrics.waiting.helper'),
           count: retained.data.waitingCount,
-          tooltip: '显示所有「等待中」',
+          tooltip: t('metrics.waiting.tooltip'),
           href: '/companies?status=waiting_result',
           background: '$warningSoft' as const,
           accent: '$warningStrong' as const,
@@ -277,9 +275,9 @@ export function SelectionSummarySection({ timeBucket }: { timeBucket: number }) 
 
   return (
     <DashboardSection
-      description="点击卡片查看对应的企业列表"
+      description={t('summaryDescription')}
       icon={<BarChart3 color="$text" size={22} />}
-      title="当前选考状态"
+      title={t('summary')}
     >
       {state.status === 'error' ? (
         <ModuleRetry
@@ -376,6 +374,7 @@ function MetricLabel({ accent, label }: { accent: '$accentStrong' | '$infoStrong
 }
 
 export function RecentProgressSection({ timeBucket }: { timeBucket: number }) {
+  const { t } = useTranslation(['dashboard', 'selection']);
   const [retryToken, setRetryToken] = useState(0);
   const state = useQuery({
     query: api.dashboard.listRecentProgress,
@@ -384,14 +383,14 @@ export function RecentProgressSection({ timeBucket }: { timeBucket: number }) {
   const retained = useRetainedQueryData(state, 'dashboard-recent-progress');
   const description =
     retained.hasData && retained.data.length > 0
-      ? `最近 7 天，你推进了 ${retained.data.length} 个选考节点`
+      ? t('dashboard:recentDescription', { count: retained.data.length })
       : undefined;
 
   return (
     <DashboardSection
       description={description}
       icon={<TrendingUp color="$text" size={22} />}
-      title="最近推进"
+      title={t('dashboard:recent')}
     >
       {state.status === 'error' ? (
         <ModuleRetry
@@ -401,7 +400,7 @@ export function RecentProgressSection({ timeBucket }: { timeBucket: number }) {
       ) : null}
       {state.status === 'pending' && !retained.hasData ? <RecentProgressSkeleton /> : null}
       {retained.hasData && retained.data.length === 0 ? (
-        <InlineEmpty message="过去 7 天暂无推进" />
+        <InlineEmpty message={t('dashboard:noRecent')} />
       ) : null}
       {retained.hasData && retained.data.length > 0 ? (
         <YStack borderColor="$border" borderWidth={1} style={{ borderRadius: 12, overflow: 'hidden' }}>
@@ -437,7 +436,7 @@ export function RecentProgressSection({ timeBucket }: { timeBucket: number }) {
                       numberOfLines={1}
                       style={{ flexShrink: 1 }}
                     >
-                      {item.selectionStepName}
+                      {getSelectionStepDisplayName({ name: item.selectionStepName, presetKey: item.selectionStepPresetKey }, t)}
                     </Text>
                     <YStack
                       bg={passed ? '$successSoft' : '$infoSoft'}
@@ -450,7 +449,7 @@ export function RecentProgressSection({ timeBucket }: { timeBucket: number }) {
                         fontSize={12}
                         fontWeight="600"
                       >
-                        {passed ? '通过' : '已完成'}
+                        {passed ? t('dashboard:passed') : t('dashboard:completed')}
                       </Text>
                     </YStack>
                   </XStack>
@@ -594,6 +593,7 @@ function SkeletonBlock({
 }
 
 function ModuleRetry({ compact, onRetry }: { compact: boolean; onRetry: () => void }) {
+  const { t } = useTranslation('common');
   return (
     <XStack
       bg={compact ? 'transparent' : '$surfaceMuted'}
@@ -602,8 +602,8 @@ function ModuleRetry({ compact, onRetry }: { compact: boolean; onRetry: () => vo
       p={compact ? 0 : '$md'}
       style={{ alignItems: 'center', borderRadius: 12, justifyContent: 'space-between' }}
     >
-      <Text color="$danger" fontSize={13}>加载失败，请重试</Text>
-      <AppButton variant="ghost" onPress={onRetry}>重试</AppButton>
+      <Text color="$danger" fontSize={13}>{t('errors.load')}</Text>
+      <AppButton variant="ghost" onPress={onRetry}>{t('actions.retry')}</AppButton>
     </XStack>
   );
 }

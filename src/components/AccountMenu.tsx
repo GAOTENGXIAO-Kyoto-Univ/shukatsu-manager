@@ -1,9 +1,11 @@
 import { Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 export function AccountMenu() {
+  const { t } = useTranslation('auth');
   return (
     <View>
-      <Text>账户菜单目前仅支持 Web。</Text>
+      <Text>{t('accountMenuWebOnly')}</Text>
     </View>
   );
 }

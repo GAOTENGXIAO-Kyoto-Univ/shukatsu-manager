@@ -1,11 +1,12 @@
 import { Check } from '@tamagui/lucide-icons-2';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView } from 'react-native';
 import { XStack, YStack, Text } from 'tamagui';
 
 import { AppButton } from '@/components/ui/AppButton';
 import { AppInput } from '@/components/ui/AppInput';
-import { statusFilterOptions } from '@/components/selection/selectionConstants';
+import { getStatusFilterLabel, statusFilterOptions } from '@/components/selection/selectionConstants';
 
 import { AppliedFilters, filterApplications, getStageFilterLabel } from './filtering';
 import { ResponsiveOverlay } from './ResponsiveOverlay';
@@ -39,6 +40,7 @@ export function CompanyFilterPanel({
   onClose,
   open,
 }: CompanyFilterPanelProps) {
+  const { t } = useTranslation(['companies', 'selection', 'common']);
   const [draft, setDraft] = useState<AppliedFilters>(filters);
 
   const resultCount = filterApplications(applications, keyword, draft).length;
@@ -46,7 +48,7 @@ export function CompanyFilterPanel({
     <ResponsiveOverlay
       open={open}
       onClose={onClose}
-      title="筛选条件"
+      title={t('companies:filterPanel.title')}
       desktopPresentation="popover"
       mobileNearFullscreen
       width={380}
@@ -55,38 +57,38 @@ export function CompanyFilterPanel({
       <YStack gap="$base" pb="$sm">
         <XStack style={{ justifyContent: 'flex-end' }}>
           <AppButton variant="ghost" onPress={() => setDraft(emptyFilters)}>
-            重置
+            {t('companies:filterPanel.reset')}
           </AppButton>
         </XStack>
         <YStack gap="$sm">
           <Text color="$text" fontWeight="600">
-            行业
+            {t('companies:industry')}
           </Text>
           <AppInput
-            placeholder="输入行业关键词..."
+            placeholder={t('companies:filterPanel.industryPlaceholder')}
             value={draft.industry}
             onChangeText={(value) => setDraft((current) => ({ ...current, industry: value }))}
           />
         </YStack>
         <YStack gap="$sm">
           <Text color="$text" fontWeight="600">
-            岗位
+            {t('companies:job')}
           </Text>
           <AppInput
-            placeholder="输入岗位关键词..."
+            placeholder={t('companies:filterPanel.jobPlaceholder')}
             value={draft.job}
             onChangeText={(value) => setDraft((current) => ({ ...current, job: value }))}
           />
         </YStack>
         <YStack gap="$sm">
           <Text color="$text" fontWeight="600">
-            选考状态
+            {t('companies:filterPanel.status')}
           </Text>
           <XStack flexWrap="wrap" gap="$sm">
             {statusFilterOptions.map((option) => (
               <FilterToggle
                 key={option.value}
-                label={option.label}
+                label={getStatusFilterLabel(t, option.value)}
                 selected={draft.statuses.includes(option.value)}
                 onPress={() =>
                   setDraft((current) => ({
@@ -101,13 +103,13 @@ export function CompanyFilterPanel({
         {availableStages.length > 0 ? (
           <YStack gap="$sm">
             <Text color="$text" fontWeight="600">
-              选考阶段
+              {t('companies:filterPanel.stage')}
             </Text>
             <XStack flexWrap="wrap" gap="$sm">
               {availableStages.map((stage) => (
                 <FilterToggle
                   key={stage}
-                  label={getStageFilterLabel(stage)}
+                  label={getStageFilterLabel(t, stage)}
                   selected={draft.stages.includes(stage)}
                   onPress={() =>
                     setDraft((current) => ({
@@ -121,12 +123,12 @@ export function CompanyFilterPanel({
           </YStack>
         ) : null}
         <YStack gap="$sm">
-          <Text color="$text" fontWeight="600">近期事项</Text>
+          <Text color="$text" fontWeight="600">{t('companies:filterPanel.upcoming')}</Text>
           <XStack flexWrap="wrap" gap="$sm">
             {[
-              { value: '3d' as const, label: '3天内' },
-              { value: '7d' as const, label: '7天内' },
-              { value: '14d' as const, label: '14天内' },
+              { value: '3d' as const, label: t('companies:daysWithin', { count: 3 }) },
+              { value: '7d' as const, label: t('companies:daysWithin', { count: 7 }) },
+              { value: '14d' as const, label: t('companies:daysWithin', { count: 14 }) },
             ].map((option) => (
               <FilterToggle
                 key={option.value}
@@ -143,10 +145,10 @@ export function CompanyFilterPanel({
           </XStack>
         </YStack>
         <YStack gap="$sm">
-          <Text color="$text" fontWeight="600">事项类型</Text>
+          <Text color="$text" fontWeight="600">{t('companies:filterPanel.eventType')}</Text>
           <XStack>
             <FilterToggle
-              label="截止日期"
+              label={t('companies:deadline')}
               selected={draft.eventType === 'deadline'}
               onPress={() =>
                 setDraft((current) => ({
@@ -158,7 +160,7 @@ export function CompanyFilterPanel({
           </XStack>
         </YStack>
         <AppButton variant="primary" onPress={() => onApply(draft)}>
-          {`查看 ${resultCount} 个结果`}
+          {t('companies:filterPanel.apply', { count: resultCount })}
         </AppButton>
       </YStack>
       </ScrollView>

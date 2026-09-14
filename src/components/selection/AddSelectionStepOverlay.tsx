@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from 'convex/react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Text, XStack, YStack } from 'tamagui';
 import { z } from 'zod';
 
@@ -14,11 +15,14 @@ import { analytics } from '@/lib/analytics';
 import {
   selectionStepPresets,
   selectionStepTypeOptions,
+  getPresetLabel,
+  getStepTypeLabel,
+  type SelectionStepPresetKey,
   type SelectionStepType,
 } from './selectionConstants';
 
 const customStepSchema = z.object({
-  name: z.string().trim().min(1, '步骤名称不能为空'),
+  name: z.string().trim().min(1, 'STEP_NAME_REQUIRED'),
   type: z.enum(['es', 'web_test', 'interview', 'briefing', 'group_discussion', 'offer_meeting', 'other']),
 });
 
@@ -31,6 +35,7 @@ type AddSelectionStepOverlayProps = {
 };
 
 export function AddSelectionStepOverlay({ applicationId, onClose, open }: AddSelectionStepOverlayProps) {
+  const { t } = useTranslation(['selection', 'common']);
   const createStep = useMutation(api.selectionSteps.create);
   const [customOpen, setCustomOpen] = useState(false);
   const [pendingPreset, setPendingPreset] = useState<string | null>(null);
@@ -50,20 +55,24 @@ export function AddSelectionStepOverlay({ applicationId, onClose, open }: AddSel
   });
   const selectedCustomType = useWatch({ control, name: 'type' }) ?? 'interview';
 
-  async function createPreset(name: string, type: SelectionStepType, key: string) {
+  async function createPreset(
+    name: string,
+    type: SelectionStepType,
+    presetKey: SelectionStepPresetKey,
+  ) {
     if (pendingPreset) {
       return;
     }
 
-    setPendingPreset(key);
+    setPendingPreset(presetKey);
     setErrorMessage(null);
 
     try {
-      await createStep({ applicationId, name, type });
+      await createStep({ applicationId, name, presetKey, type });
       analytics.selectionStepCreated({ step_type: type });
       close();
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : '添加失败，请重试');
+    } catch {
+      setErrorMessage(t('selection:messages.addFailed'));
     } finally {
       setPendingPreset(null);
     }
@@ -74,8 +83,8 @@ export function AddSelectionStepOverlay({ applicationId, onClose, open }: AddSel
       await createStep({ applicationId, name: values.name, type: values.type });
       analytics.selectionStepCreated({ step_type: values.type });
       close();
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : '添加失败，请重试');
+    } catch {
+      setErrorMessage(t('selection:messages.addFailed'));
     }
   }
 
@@ -88,16 +97,20 @@ export function AddSelectionStepOverlay({ applicationId, onClose, open }: AddSel
   }
 
   return (
-    <ResponsiveOverlay open={open} onClose={close} title="添加步骤" desktopPresentation="popover">
+    <ResponsiveOverlay open={open} onClose={close} title={t('selection:actions.addStep')} desktopPresentation="popover">
       <YStack gap="$base">
         <YStack gap="$sm">
           <Text color="$textSecondary" fontSize={13}>
-            常用步骤
+            {t('selection:labels.commonSteps')}
           </Text>
           <XStack flexWrap="wrap" gap="$sm">
-            {selectionStepPresets.map((preset) => (
+            {selectionStepPresets.map((preset) => {
+              const key = preset.presetKey ?? 'custom';
+              const label = getPresetLabel(t, preset.presetKey);
+
+              return (
               <AppButton
-                key={preset.label}
+                key={key}
                 variant={preset.custom ? 'secondary' : 'ghost'}
                 disabled={Boolean(pendingPreset) || isSubmitting}
                 onPress={() => {
@@ -106,12 +119,15 @@ export function AddSelectionStepOverlay({ applicationId, onClose, open }: AddSel
                     return;
                   }
 
-                  void createPreset(preset.name, preset.type, preset.label);
+                  if (preset.presetKey) {
+                    void createPreset(preset.name, preset.type, preset.presetKey);
+                  }
                 }}
               >
-                {pendingPreset === preset.label ? '添加中...' : preset.label}
+                {pendingPreset === key ? t('common:states.adding') : label}
               </AppButton>
-            ))}
+              );
+            })}
           </XStack>
         </YStack>
 
@@ -119,25 +135,25 @@ export function AddSelectionStepOverlay({ applicationId, onClose, open }: AddSel
           <YStack gap="$base">
             <YStack gap="$sm">
               <Text color="$text" fontWeight="600">
-                步骤名称 *
+                {t('selection:labels.stepName')} *
               </Text>
               <Controller
                 control={control}
                 name="name"
                 render={({ field }) => (
                   <AppInput
-                    placeholder="技术面试"
+                    placeholder={t('selection:placeholders.stepName')}
                     value={field.value}
                     onBlur={field.onBlur}
                     onChangeText={field.onChange}
                   />
                 )}
               />
-              {errors.name ? <Text color="$danger">{errors.name.message}</Text> : null}
+              {errors.name ? <Text color="$danger">{t('selection:messages.nameRequired')}</Text> : null}
             </YStack>
             <YStack gap="$sm">
               <Text color="$text" fontWeight="600">
-                步骤类型 *
+                {t('selection:labels.stepType')} *
               </Text>
               <XStack flexWrap="wrap" gap="$sm">
                 {selectionStepTypeOptions.map((option) => {
@@ -160,7 +176,7 @@ export function AddSelectionStepOverlay({ applicationId, onClose, open }: AddSel
                         fontSize={13}
                         fontWeight="600"
                       >
-                        {option.label}
+                        {getStepTypeLabel(t, option.value)}
                       </Text>
                     </XStack>
                   );
@@ -169,10 +185,10 @@ export function AddSelectionStepOverlay({ applicationId, onClose, open }: AddSel
             </YStack>
             <XStack gap="$sm" style={{ justifyContent: 'flex-end' }}>
               <AppButton variant="secondary" disabled={isSubmitting} onPress={() => setCustomOpen(false)}>
-                取消
+                {t('common:actions.cancel')}
               </AppButton>
               <AppButton variant="primary" disabled={isSubmitting} onPress={handleSubmit(submitCustom)}>
-                {isSubmitting ? '添加中...' : '添加'}
+                {isSubmitting ? t('common:states.adding') : t('common:actions.add')}
               </AppButton>
             </XStack>
           </YStack>

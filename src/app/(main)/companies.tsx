@@ -2,6 +2,7 @@ import { Filter, Plus, Search } from '@tamagui/lucide-icons-2';
 import { useQuery_experimental as useQuery } from 'convex/react';
 import { Href, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView } from 'react-native';
 import { XStack, YStack, Text, useMedia } from 'tamagui';
 
@@ -97,6 +98,7 @@ function companiesHref(params: AppliedFilters & { q: string }) {
 }
 
 export default function CompaniesScreen() {
+  const { t } = useTranslation(['companies', 'selection', 'common']);
   const media = useMedia();
   const isDesktop = Boolean(media.md);
   const router = useRouter();
@@ -293,10 +295,10 @@ export default function CompaniesScreen() {
             style={{ alignItems: 'center', justifyContent: 'space-between' }}
           >
             <Text color="$text" fontSize={28} fontWeight="600">
-              企业
+              {t('companies:title')}
             </Text>
             <AppButton variant="primary" icon={<Plus size={18} />} onPress={() => setCreateOpen(true)}>
-              添加
+              {t('common:actions.add')}
             </AppButton>
           </XStack>
 
@@ -307,7 +309,7 @@ export default function CompaniesScreen() {
               </YStack>
               <AppInput
                 pl="$xl"
-                placeholder="搜索企业、岗位..."
+                placeholder={t('companies:searchPlaceholder')}
                 value={searchValue}
                 onChangeText={(value) => setSearchDraft({ urlKeyword, value })}
               />
@@ -317,7 +319,7 @@ export default function CompaniesScreen() {
               icon={<Filter size={18} />}
               onPress={() => setFilterOpen(true)}
             >
-              {filterCount > 0 ? `筛选 · ${filterCount}` : '筛选'}
+              {filterCount > 0 ? t('companies:filterCount', { count: filterCount }) : t('companies:filter')}
             </AppButton>
           </XStack>
 
@@ -325,38 +327,38 @@ export default function CompaniesScreen() {
             <XStack flexWrap="wrap" gap="$sm" pt="$md">
               {appliedFilters.industry.trim() ? (
                 <FilterChip
-                  label={`行业：${appliedFilters.industry.trim()}`}
+                  label={`${t('companies:industry')}：${appliedFilters.industry.trim()}`}
                   onRemove={() => removeFilter('industry')}
                 />
               ) : null}
               {appliedFilters.job.trim() ? (
                 <FilterChip
-                  label={`岗位：${appliedFilters.job.trim()}`}
+                  label={`${t('companies:job')}：${appliedFilters.job.trim()}`}
                   onRemove={() => removeFilter('job')}
                 />
               ) : null}
               {appliedFilters.statuses.map((status) => (
                 <FilterChip
                   key={status}
-                  label={getStatusFilterLabel(status)}
+                  label={getStatusFilterLabel(t, status)}
                   onRemove={() => removeStatusFilter(status)}
                 />
               ))}
               {appliedFilters.stages.map((stage) => (
                 <FilterChip
                   key={stage}
-                  label={getStageFilterLabel(stage)}
+                  label={getStageFilterLabel(t, stage)}
                   onRemove={() => removeStageFilter(stage)}
                 />
               ))}
               {appliedFilters.upcoming ? (
                 <FilterChip
-                  label={`${appliedFilters.upcoming.replace('d', '')}天内`}
+                  label={t('companies:daysWithin', { count: appliedFilters.upcoming.replace('d', '') })}
                   onRemove={() => removeFilter('upcoming')}
                 />
               ) : null}
               {appliedFilters.eventType === 'deadline' ? (
-                <FilterChip label="截止日期" onRemove={() => removeFilter('eventType')} />
+                <FilterChip label={t('companies:deadline')} onRemove={() => removeFilter('eventType')} />
               ) : null}
             </XStack>
           ) : null}
@@ -367,8 +369,8 @@ export default function CompaniesScreen() {
 
           {applicationsState.status === 'error' && !retainedApplications.hasData ? (
             <MessageState
-              message="企业列表读取失败，请稍后重试"
-              actionLabel="重新加载"
+              message={t('companies:listLoadFailed')}
+              actionLabel={t('companies:reload')}
               onAction={() => router.replace('/companies' as Href)}
             />
           ) : null}
@@ -381,8 +383,8 @@ export default function CompaniesScreen() {
           applications.length > 0 &&
           filteredApplications.length === 0 ? (
             <MessageState
-              message={hasSearchOrFilter ? '没有符合条件的应聘记录' : '还没有应聘记录'}
-              actionLabel={hasSearchOrFilter ? '清除条件' : '添加'}
+              message={hasSearchOrFilter ? t('companies:noMatches') : t('companies:noApplications')}
+              actionLabel={hasSearchOrFilter ? t('companies:clearFilters') : t('common:actions.add')}
               onAction={() => {
                 if (hasSearchOrFilter) {
                   setSearchDraft({ urlKeyword: '', value: '' });
@@ -435,7 +437,7 @@ export default function CompaniesScreen() {
         onClose={() => setDeleteApplication(null)}
         onDeleted={() => {
           setDeleteApplication(null);
-          setToastMessage('应聘记录已删除');
+          setToastMessage(t('companies:deleted'));
         }}
       />
       <AppToast message={toastMessage} />

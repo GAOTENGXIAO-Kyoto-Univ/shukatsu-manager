@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from 'convex/react';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Controller, useForm } from 'react-hook-form';
 import { Text, XStack, YStack } from 'tamagui';
 import { z } from 'zod';
@@ -25,10 +26,10 @@ const optionalUrl = z
     } catch {
       return false;
     }
-  }, 'URL 格式不正确');
+  }, 'URL_INVALID');
 
 const editApplicationSchema = z.object({
-  jobTitle: z.string().trim().min(1, '应聘岗位不能为空'),
+  jobTitle: z.string().trim().min(1, 'JOB_TITLE_REQUIRED'),
   preferenceLevel: z.number().int().min(1).max(5).nullable(),
   location: z.string(),
   applicationUrl: optionalUrl,
@@ -45,6 +46,7 @@ type EditApplicationOverlayProps = {
 };
 
 export function EditApplicationOverlay({ application, onClose, open }: EditApplicationOverlayProps) {
+  const { t } = useTranslation(['companies', 'common']);
   const updateApplication = useMutation(api.applications.update);
   const {
     control,
@@ -101,19 +103,19 @@ export function EditApplicationOverlay({ application, onClose, open }: EditAppli
       });
       onClose();
     } catch (error) {
-      const message = error instanceof Error ? error.message : '保存失败，请重试';
+      const message = error instanceof Error ? error.message : '';
       setError('root', {
-        message: message.includes('相同岗位') ? '该企业下已存在相同岗位的应聘记录' : message,
+        message: message.includes('APPLICATION_DUPLICATE') ? t('companies:form.duplicateApplication') : t('common:errors.save'),
       });
     }
   }
 
   return (
-    <ResponsiveOverlay open={open} onClose={onClose} title="编辑应聘信息">
+    <ResponsiveOverlay open={open} onClose={onClose} title={t('companies:form.editApplication')}>
       <YStack gap="$base">
         <YStack gap="$sm">
           <Text color="$text" fontWeight="600">
-            应聘岗位 *
+            {t('companies:form.jobTitle')} *
           </Text>
           <Controller
             control={control}
@@ -122,7 +124,7 @@ export function EditApplicationOverlay({ application, onClose, open }: EditAppli
               <AppInput value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} />
             )}
           />
-          {errors.jobTitle ? <Text color="$danger">{errors.jobTitle.message}</Text> : null}
+          {errors.jobTitle ? <Text color="$danger">{t('companies:form.jobRequired')}</Text> : null}
         </YStack>
 
         <Controller
@@ -131,7 +133,7 @@ export function EditApplicationOverlay({ application, onClose, open }: EditAppli
           render={({ field }) => (
             <YStack gap="$sm">
               <Text color="$text" fontWeight="600">
-                志望度
+                {t('companies:detail.preference')}
               </Text>
               <XStack gap="$xs" flexWrap="wrap">
                 {[1, 2, 3, 4, 5].map((level) => (
@@ -148,12 +150,12 @@ export function EditApplicationOverlay({ application, onClose, open }: EditAppli
           )}
         />
 
-        <ApplicationTextField control={control} errors={errors} name="location" label="工作地点" />
-        <ApplicationTextField control={control} errors={errors} name="applicationUrl" label="招聘职位页面" />
-        <ApplicationTextField control={control} errors={errors} name="mypageUrl" label="MyPage 链接" />
+        <ApplicationTextField control={control} errors={errors} name="location" label={t('companies:detail.location')} invalidUrlMessage={t('companies:form.invalidUrl')} />
+        <ApplicationTextField control={control} errors={errors} name="applicationUrl" label={t('companies:detail.jobPage')} invalidUrlMessage={t('companies:form.invalidUrl')} />
+        <ApplicationTextField control={control} errors={errors} name="mypageUrl" label={t('companies:form.mypage')} invalidUrlMessage={t('companies:form.invalidUrl')} />
         <YStack gap="$sm">
           <Text color="$text" fontWeight="600">
-            备注
+            {t('companies:detail.memo')}
           </Text>
           <Controller
             control={control}
@@ -175,10 +177,10 @@ export function EditApplicationOverlay({ application, onClose, open }: EditAppli
 
         <XStack gap="$sm" style={{ justifyContent: 'flex-end' }}>
           <AppButton variant="secondary" disabled={isSubmitting} onPress={onClose}>
-            取消
+            {t('common:actions.cancel')}
           </AppButton>
           <AppButton variant="primary" disabled={isSubmitting} onPress={handleSubmit(submit)}>
-            {isSubmitting ? '保存中...' : '保存'}
+            {isSubmitting ? t('common:states.saving') : t('common:actions.save')}
           </AppButton>
         </XStack>
       </YStack>
@@ -191,11 +193,13 @@ function ApplicationTextField({
   errors,
   label,
   name,
+  invalidUrlMessage,
 }: {
   control: ReturnType<typeof useForm<EditApplicationForm>>['control'];
   errors: ReturnType<typeof useForm<EditApplicationForm>>['formState']['errors'];
   label: string;
   name: 'location' | 'applicationUrl' | 'mypageUrl';
+  invalidUrlMessage: string;
 }) {
   return (
     <YStack gap="$sm">
@@ -209,7 +213,7 @@ function ApplicationTextField({
           <AppInput value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} />
         )}
       />
-      {errors[name] ? <Text color="$danger">{errors[name]?.message}</Text> : null}
+      {errors[name] ? <Text color="$danger">{invalidUrlMessage}</Text> : null}
     </YStack>
   );
 }

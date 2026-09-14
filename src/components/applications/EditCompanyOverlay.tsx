@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from 'convex/react';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Controller, useForm } from 'react-hook-form';
 import { Text, XStack, YStack } from 'tamagui';
 import { z } from 'zod';
@@ -25,10 +26,10 @@ const optionalUrl = z
     } catch {
       return false;
     }
-  }, '官网格式不正确');
+  }, 'WEBSITE_URL_INVALID');
 
 const editCompanySchema = z.object({
-  name: z.string().trim().min(1, '企业名称不能为空'),
+  name: z.string().trim().min(1, 'COMPANY_NAME_REQUIRED'),
   industry: z.string(),
   websiteUrl: optionalUrl,
 });
@@ -42,6 +43,7 @@ type EditCompanyOverlayProps = {
 };
 
 export function EditCompanyOverlay({ application, onClose, open }: EditCompanyOverlayProps) {
+  const { t } = useTranslation(['companies', 'common']);
   const updateCompany = useMutation(api.companies.update);
   const {
     control,
@@ -88,24 +90,24 @@ export function EditCompanyOverlay({ application, onClose, open }: EditCompanyOv
     } catch (error) {
       const message = error instanceof Error ? error.message : '';
       setError('root', {
-        message: message.includes('已存在同名企业') ? '已存在同名企业' : '保存失败，请重试',
+        message: message.includes('COMPANY_DUPLICATE') ? t('companies:form.duplicateCompany') : t('common:errors.save'),
       });
     }
   }
 
   return (
-    <ResponsiveOverlay open={open} onClose={onClose} title="编辑企业信息">
+    <ResponsiveOverlay open={open} onClose={onClose} title={t('companies:form.editCompany')}>
       <YStack gap="$base">
-        <CompanyTextField control={control} errors={errors} name="name" label="企业名称 *" />
-        <CompanyTextField control={control} errors={errors} name="industry" label="行业" />
-        <CompanyTextField control={control} errors={errors} name="websiteUrl" label="官网" />
+        <CompanyTextField control={control} errors={errors} name="name" label={`${t('companies:form.companyName')} *`} errorMessage={t('companies:form.companyRequired')} />
+        <CompanyTextField control={control} errors={errors} name="industry" label={t('companies:industry')} errorMessage="" />
+        <CompanyTextField control={control} errors={errors} name="websiteUrl" label={t('companies:detail.website')} errorMessage={t('companies:form.invalidUrl')} />
         {errors.root?.message ? <Text color="$danger">{errors.root.message}</Text> : null}
         <XStack gap="$sm" style={{ justifyContent: 'flex-end' }}>
           <AppButton variant="secondary" disabled={isSubmitting} onPress={onClose}>
-            取消
+            {t('common:actions.cancel')}
           </AppButton>
           <AppButton variant="primary" disabled={isSubmitting} onPress={handleSubmit(submit)}>
-            {isSubmitting ? '保存中...' : '保存'}
+            {isSubmitting ? t('common:states.saving') : t('common:actions.save')}
           </AppButton>
         </XStack>
       </YStack>
@@ -118,11 +120,13 @@ function CompanyTextField({
   errors,
   label,
   name,
+  errorMessage,
 }: {
   control: ReturnType<typeof useForm<EditCompanyForm>>['control'];
   errors: ReturnType<typeof useForm<EditCompanyForm>>['formState']['errors'];
   label: string;
   name: keyof EditCompanyForm;
+  errorMessage: string;
 }) {
   return (
     <YStack gap="$sm">
@@ -136,7 +140,7 @@ function CompanyTextField({
           <AppInput value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} />
         )}
       />
-      {errors[name] ? <Text color="$danger">{errors[name]?.message}</Text> : null}
+      {errors[name] ? <Text color="$danger">{errorMessage}</Text> : null}
     </YStack>
   );
 }

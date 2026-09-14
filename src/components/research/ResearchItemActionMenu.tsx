@@ -2,6 +2,7 @@ import { FilePenLine, Pin, PinOff, Trash2 } from '@tamagui/lucide-icons-2';
 import { useMutation } from 'convex/react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Text, XStack, YStack } from 'tamagui';
 
 import { api } from '../../../convex/_generated/api';
@@ -23,6 +24,7 @@ export function ResearchItemActionMenu({
   onError,
   onRequestDelete,
 }: ResearchItemActionMenuProps) {
+  const { t } = useTranslation(['research', 'common']);
   const setPinned = useMutation(api.researchItems.setPinned);
   const [isPinning, setIsPinning] = useState(false);
 
@@ -39,7 +41,7 @@ export function ResearchItemActionMenu({
       onClose();
     } catch {
       setIsPinning(false);
-      onError('置顶状态更新失败，请重试');
+      onError(t('research:actions.pinFailed'));
     }
   }
 
@@ -48,7 +50,7 @@ export function ResearchItemActionMenu({
       desktopPresentation="popover"
       onClose={onClose}
       open={Boolean(item)}
-      title="研究操作"
+      title={t('research:actions.menu')}
       width={320}
     >
       {item ? (
@@ -62,18 +64,18 @@ export function ResearchItemActionMenu({
                 <Pin color="$textSecondary" size={18} />
               )
             }
-            label={item.isPinned ? '取消置顶' : '置顶'}
+            label={item.isPinned ? t('research:actions.unpin') : t('research:actions.pin')}
             onPress={() => void togglePinned()}
           />
           <MenuAction
             icon={<FilePenLine color="$textSecondary" size={18} />}
-            label="编辑"
+            label={t('common:actions.edit')}
             onPress={() => onEdit(item)}
           />
           <MenuAction
             danger
             icon={<Trash2 color="$danger" size={18} />}
-            label="删除"
+            label={t('common:actions.delete')}
             onPress={() => onRequestDelete(item)}
           />
         </YStack>

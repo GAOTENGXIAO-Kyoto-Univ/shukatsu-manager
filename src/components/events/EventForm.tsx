@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from 'convex/react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Text, XStack, YStack } from 'tamagui';
 import { z } from 'zod';
 
@@ -16,7 +17,7 @@ import { eventToFormValues } from './eventFormatting';
 const eventFormSchema = z
   .object({
     timingType: z.enum(['scheduled', 'deadline']),
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '请选择日期'),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'DATE_REQUIRED'),
     time: z.string(),
     location: z.string(),
     meetingUrl: z.string(),
@@ -24,7 +25,7 @@ const eventFormSchema = z
   })
   .superRefine((values, ctx) => {
     if (values.timingType === 'scheduled' && !values.time) {
-      ctx.addIssue({ code: 'custom', path: ['time'], message: '预定时间必须填写时间' });
+      ctx.addIssue({ code: 'custom', path: ['time'], message: 'TIME_REQUIRED' });
     }
 
     if (values.meetingUrl.trim()) {
@@ -32,7 +33,7 @@ const eventFormSchema = z
         const url = new URL(values.meetingUrl.trim());
         if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error();
       } catch {
-        ctx.addIssue({ code: 'custom', path: ['meetingUrl'], message: '请输入有效的 http/https 链接' });
+        ctx.addIssue({ code: 'custom', path: ['meetingUrl'], message: 'URL_INVALID' });
       }
     }
   });
@@ -52,6 +53,7 @@ export function EventForm({
   selectionStepId: EventDetail['selectionStepId'];
   stepType: SelectionStepType;
 }) {
+  const { t } = useTranslation(['calendar', 'common']);
   const createEvent = useMutation(api.events.create);
   const updateEvent = useMutation(api.events.update);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -97,7 +99,7 @@ export function EventForm({
       }
       onSaved();
     } catch {
-      setSaveError('保存失败，请重试');
+      setSaveError(t('common:errors.save'));
     }
   }
 
@@ -108,11 +110,11 @@ export function EventForm({
         name="timingType"
         render={({ field }) => (
           <YStack gap="$sm">
-            <Text color="$text" fontWeight="600">类型 *</Text>
+            <Text color="$text" fontWeight="600">{t('calendar:timingType')} *</Text>
             <XStack gap="$sm">
               {[
-                { value: 'scheduled' as const, label: '预定时间' },
-                { value: 'deadline' as const, label: '截止日期' },
+                { value: 'scheduled' as const, label: t('calendar:scheduled') },
+                { value: 'deadline' as const, label: t('calendar:deadline') },
               ].map((option) => (
                 <AppButton
                   key={option.value}
@@ -128,7 +130,7 @@ export function EventForm({
         )}
       />
 
-      <Field label="日期 *" error={errors.date?.message}>
+      <Field label={`${t('calendar:date')} *`} error={errors.date ? t('calendar:validation.date') : undefined}>
         <Controller
           control={control}
           name="date"
@@ -137,7 +139,7 @@ export function EventForm({
           )}
         />
       </Field>
-      <Field label={`时间${timingType === 'scheduled' ? ' *' : ''}`} error={errors.time?.message}>
+      <Field label={`${t('calendar:time')}${timingType === 'scheduled' ? ' *' : ''}`} error={errors.time ? t('calendar:validation.time') : undefined}>
         <Controller
           control={control}
           name="time"
@@ -146,17 +148,17 @@ export function EventForm({
           )}
         />
       </Field>
-      <Field label="地点" error={errors.location?.message}>
+      <Field label={t('calendar:location')} error={errors.location?.message}>
         <Controller control={control} name="location" render={({ field }) => <AppInput value={field.value} onChangeText={field.onChange} />} />
       </Field>
-      <Field label="会议链接" error={errors.meetingUrl?.message}>
+      <Field label={t('calendar:meetingUrl')} error={errors.meetingUrl ? t('calendar:validation.url') : undefined}>
         <Controller
           control={control}
           name="meetingUrl"
           render={({ field }) => <AppInput autoCapitalize="none" inputMode="url" value={field.value} onChangeText={field.onChange} />}
         />
       </Field>
-      <Field label="备注" error={errors.note?.message}>
+      <Field label={t('calendar:note')} error={errors.note?.message}>
         <Controller
           control={control}
           name="note"
@@ -165,7 +167,7 @@ export function EventForm({
       </Field>
       {saveError ? <Text color="$danger">{saveError}</Text> : null}
       <AppButton variant="primary" disabled={isSubmitting} onPress={handleSubmit(submit)}>
-        {isSubmitting ? '保存中...' : event ? '保存' : '添加'}
+        {isSubmitting ? t('common:states.saving') : event ? t('common:actions.save') : t('common:actions.add')}
       </AppButton>
     </YStack>
   );

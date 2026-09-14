@@ -1,5 +1,6 @@
 import type { ApplicationListItem } from './types';
-import { sortStageNames, type StatusFilterValue } from '@/components/selection/selectionConstants';
+import type { TFunction } from 'i18next';
+import { getStoredStageDisplayName, sortStageNames, type StatusFilterValue } from '@/components/selection/selectionConstants';
 
 export type AppliedFilters = {
   industry: string;
@@ -89,6 +90,6 @@ export function getAvailableStageFilters(applications: ApplicationListItem[]) {
   return ['interview', ...sortStageNames([...stageNames].filter((stage) => stage !== 'interview'))];
 }
 
-export function getStageFilterLabel(stage: string) {
-  return stage === 'interview' ? '面试中' : stage;
+export function getStageFilterLabel(t: TFunction, stage: string) {
+  return stage === 'interview' ? t('companies:interviewStage') : getStoredStageDisplayName(t, stage);
 }

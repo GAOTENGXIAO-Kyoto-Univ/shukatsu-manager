@@ -18,6 +18,7 @@ type UpcomingItem =
       companyName: string;
       jobTitle: string;
       selectionStepName: string;
+      selectionStepPresetKey?: Doc<"selectionSteps">["presetKey"];
       applicationId: Id<"applications">;
       selectionStepId: Id<"selectionSteps">;
       createdAt: number;
@@ -107,6 +108,7 @@ export const listUpcomingItems = query({
         companyName: company.name,
         jobTitle: application.jobTitle,
         selectionStepName: selectionStep.name,
+        selectionStepPresetKey: selectionStep.presetKey,
         applicationId: application._id,
         selectionStepId: selectionStep._id,
       });
@@ -212,6 +214,7 @@ export const listRecentProgress = query({
         companyName: company.name,
         jobTitle: application.jobTitle,
         selectionStepName: selectionStep.name,
+        selectionStepPresetKey: selectionStep.presetKey,
       });
       if (items.length === 5) break;
     }

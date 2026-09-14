@@ -1,5 +1,6 @@
 import { ScrollView } from 'react-native';
 import { Text, XStack, YStack, useMedia } from 'tamagui';
+import { useTranslation } from 'react-i18next';
 
 import {
   RecentProgressSection,
@@ -9,6 +10,7 @@ import {
 import { useTimeBucket } from '@/hooks/useTimeBucket';
 
 export function DashboardScreen() {
+  const { t } = useTranslation('dashboard');
   const media = useMedia();
   const timeBucket = useTimeBucket();
   const isDesktop = Boolean(media.md);
@@ -35,10 +37,10 @@ export function DashboardScreen() {
                 fontWeight="600"
                 lineHeight={isDesktop ? 43 : 36}
               >
-                你好！
+                {t('greeting')}
               </Text>
               <Text color="$textSecondary" fontSize={isDesktop ? 16 : 14} lineHeight={22}>
-                继续加油！今天也朝着理想的未来前进吧。
+                {t('encouragement')}
               </Text>
             </YStack>
             {isDesktop ? (
@@ -49,7 +51,7 @@ export function DashboardScreen() {
                 letterSpacing={2}
                 style={{ transform: [{ rotate: '-3deg' }] }}
               >
-                一歩ずつ、きっとたどり着ける。
+                {t('motto')}
               </Text>
             ) : null}
           </XStack>

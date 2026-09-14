@@ -1,9 +1,12 @@
 import { X } from '@tamagui/lucide-icons-2';
+import { useTranslation } from 'react-i18next';
 import { XStack, Text } from 'tamagui';
 
 import { warmPaperColors } from '../../../tamagui.config';
 
 export function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  const { t } = useTranslation('common');
+
   return (
     <XStack
       bg="$accentSoft"
@@ -21,7 +24,7 @@ export function FilterChip({ label, onRemove }: { label: string; onRemove: () =>
         {label}
       </Text>
       <XStack
-        aria-label={`移除${label}`}
+        aria-label={t('removeFilter', { label })}
         cursor="pointer"
         onPress={onRemove}
         style={{ alignItems: 'center', justifyContent: 'center' }}

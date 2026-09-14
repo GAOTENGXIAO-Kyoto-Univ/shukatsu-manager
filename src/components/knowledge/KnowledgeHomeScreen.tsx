@@ -12,6 +12,7 @@ import {
 import { useAction, useMutation, useQuery_experimental as useQuery } from 'convex/react';
 import { Href, Link } from 'expo-router';
 import { ReactNode, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Text, TextArea, XStack, YStack, useMedia } from 'tamagui';
 
 import { api } from '../../../convex/_generated/api';
@@ -25,6 +26,7 @@ import { KnowledgePage } from './KnowledgeLayout';
 type Reference = { knowledgeItemId: Id<'knowledgeItems'>; title: string; sourceCompanyName?: string };
 
 export function KnowledgeHomeScreen() {
+  const { t } = useTranslation(['knowledge', 'common']);
   const overview = useQuery({ query: api.knowledgeOverview.get, args: {} });
   const media = useMedia();
   const [createCategory, setCreateCategory] = useState<'general' | 'reverse' | null>(null);
@@ -39,8 +41,8 @@ export function KnowledgeHomeScreen() {
         pb="$lg"
         pt={isDesktop ? '$md' : '$lg'}
       >
-        <Text color="$text" fontSize={30} fontWeight="600" lineHeight={38}>知识库</Text>
-        <Text color="$textSecondary" lineHeight={22}>把面试经验整理成下一次能直接使用的答案与行动。</Text>
+        <Text color="$text" fontSize={30} fontWeight="600" lineHeight={38}>{t('knowledge:title')}</Text>
+        <Text color="$textSecondary" lineHeight={22}>{t('knowledge:description')}</Text>
       </YStack>
 
       <AnswerGenerator />
@@ -54,8 +56,8 @@ export function KnowledgeHomeScreen() {
           style={{ borderRadius: 16, overflow: 'hidden' }}
         >
           <MessageState
-            message="知识库读取失败"
-            actionLabel="重试"
+            message={t('knowledge:loadFailed')}
+            actionLabel={t('common:actions.retry')}
             onAction={() => window.location.reload()}
           />
         </YStack>
@@ -64,14 +66,14 @@ export function KnowledgeHomeScreen() {
         <YStack gap="$lg">
           <KnowledgeGroup
             isDesktop={isDesktop}
-            title="系统帮我总结"
-            subtitle="根据你的面试记录自动整理值得关注的重点"
+            title={t('knowledge:summaryGroup')}
+            subtitle={t('knowledge:summarySubtitle')}
           >
             <KnowledgeModule
               href={'/knowledge/weaknesses' as Href}
               icon={<CircleAlert color="$danger" size={20} />}
               softTone="$dangerSoft"
-              title="近期需要改善"
+              title={t('knowledge:improve')}
               width="100%"
             >
               {overview.data.topWeaknesses.length > 0 ? (
@@ -81,8 +83,8 @@ export function KnowledgeHomeScreen() {
                     href={`/knowledge/weaknesses/${item.weaknessGroupId}` as Href}
                     last={index === overview.data.topWeaknesses.length - 1}
                     lines={[
-                      `在 ${item.interviewCount} 场面试中出现`,
-                      `最近一次：${item.latestCompanyName}`,
+                      t('knowledge:weaknessCount', { count: item.interviewCount }),
+                      t('knowledge:latest', { company: item.latestCompanyName }),
                     ]}
                     title={item.title}
                   />
@@ -91,7 +93,7 @@ export function KnowledgeHomeScreen() {
                 <KnowledgeEmpty
                   icon={<CircleAlert color="$danger" size={19} />}
                   softTone="$dangerSoft"
-                  message="还没有可汇总的面试弱点"
+                  message={t('knowledge:noWeaknesses')}
                 />
               )}
             </KnowledgeModule>
@@ -105,7 +107,7 @@ export function KnowledgeHomeScreen() {
                 href={'/knowledge/frequent' as Href}
                 icon={<MessageCircleQuestion color="$infoStrong" size={20} />}
                 softTone="$infoSoft"
-                title="高频面试问题"
+                title={t('knowledge:frequent')}
                 width={isDesktop ? undefined : '100%'}
               >
                 {overview.data.topFrequentQuestions.length > 0 ? (
@@ -115,8 +117,8 @@ export function KnowledgeHomeScreen() {
                       href={`/knowledge/frequent/${item.questionGroupId}` as Href}
                       last={index === overview.data.topFrequentQuestions.length - 1}
                       lines={[
-                        `被问 ${item.questionCount} 次 · 来自 ${item.distinctCompanyCount} 家公司`,
-                        `最近一次：${item.latestCompanyName}`,
+                        t('knowledge:frequency', { count: item.questionCount, companies: item.distinctCompanyCount }),
+                        t('knowledge:latest', { company: item.latestCompanyName }),
                       ]}
                       title={item.title}
                     />
@@ -125,7 +127,7 @@ export function KnowledgeHomeScreen() {
                   <KnowledgeEmpty
                     icon={<MessageCircleQuestion color="$infoStrong" size={19} />}
                     softTone="$infoSoft"
-                    message="还没有重复出现的面试问题"
+                    message={t('knowledge:noFrequent')}
                   />
                 )}
               </KnowledgeModule>
@@ -135,7 +137,7 @@ export function KnowledgeHomeScreen() {
                 href={'/knowledge/weak-answers' as Href}
                 icon={<MessageSquareWarning color="$warningStrong" size={20} />}
                 softTone="$warningSoft"
-                title="经常回答不好"
+                title={t('knowledge:weakAnswers')}
                 width={isDesktop ? undefined : '100%'}
               >
                 {overview.data.topWeakAnswers.length > 0 ? (
@@ -145,8 +147,8 @@ export function KnowledgeHomeScreen() {
                       href={`/knowledge/weak-answers/${item.questionGroupId}` as Href}
                       last={index === overview.data.topWeakAnswers.length - 1}
                       lines={[
-                        `评价为「需要改进」：${item.poorCount} 次`,
-                        `已评价：${item.evaluatedCount} 次 · 表现不佳率：${Math.round(item.poorRate * 100)}%`,
+                        t('knowledge:poorCount', { count: item.poorCount }),
+                        t('knowledge:poorRate', { count: item.evaluatedCount, rate: Math.round(item.poorRate * 100) }),
                       ]}
                       title={item.title}
                     />
@@ -155,7 +157,7 @@ export function KnowledgeHomeScreen() {
                   <KnowledgeEmpty
                     icon={<MessageSquareWarning color="$warningStrong" size={19} />}
                     softTone="$warningSoft"
-                    message="暂时没有反复出现的「需要改进」问题"
+                    message={t('knowledge:noWeakAnswers')}
                   />
                 )}
               </KnowledgeModule>
@@ -164,8 +166,8 @@ export function KnowledgeHomeScreen() {
 
           <KnowledgeGroup
             isDesktop={isDesktop}
-            title="我的个人资产"
-            subtitle="积累可以反复使用的回答与提问素材"
+            title={t('knowledge:assets')}
+            subtitle={t('knowledge:assetsSubtitle')}
           >
             <XStack
               gap="$base"
@@ -180,21 +182,21 @@ export function KnowledgeHomeScreen() {
                     variant="ghost"
                     onPress={() => setCreateCategory('general')}
                   >
-                    添加知识
+                    {t('knowledge:addKnowledge')}
                   </AppButton>
                 )}
                 flexValue={isDesktop ? 1.25 : undefined}
                 href={'/knowledge/items' as Href}
                 icon={<Library color="$successStrong" size={20} />}
                 softTone="$successSoft"
-                title="我的知识"
+                title={t('knowledge:myKnowledge')}
                 width={isDesktop ? undefined : '100%'}
               >
                 {overview.data.recentKnowledgeItems.length > 0 ? (
                   overview.data.recentKnowledgeItems.map((item, index) => (
                     <KnowledgeItemRow
                       key={item.knowledgeItemId}
-                      category={item.category === 'qa' ? '问题回答' : '可用素材'}
+                      category={item.category === 'qa' ? t('knowledge:qa') : t('knowledge:material')}
                       href={`/knowledge/items?item=${item.knowledgeItemId}` as Href}
                       last={index === overview.data.recentKnowledgeItems.length - 1}
                       title={item.title}
@@ -202,10 +204,10 @@ export function KnowledgeHomeScreen() {
                   ))
                 ) : (
                   <KnowledgeEmpty
-                    action={<AppButton onPress={() => setCreateCategory('general')}>添加知识</AppButton>}
+                    action={<AppButton onPress={() => setCreateCategory('general')}>{t('knowledge:addKnowledge')}</AppButton>}
                     icon={<Library color="$successStrong" size={19} />}
                     softTone="$successSoft"
-                    message="还没有知识内容"
+                    message={t('knowledge:noKnowledge')}
                   />
                 )}
               </KnowledgeModule>
@@ -219,14 +221,14 @@ export function KnowledgeHomeScreen() {
                     variant="ghost"
                     onPress={() => setCreateCategory('reverse')}
                   >
-                    添加逆質問
+                    {t('knowledge:addReverse')}
                   </AppButton>
                 )}
                 flexValue={isDesktop ? 1 : undefined}
                 href={'/knowledge/reverse-questions' as Href}
                 icon={<CircleHelp color="$accentStrong" size={20} />}
                 softTone="$accentSoft"
-                title="逆質問"
+                title={t('knowledge:reverse')}
                 width={isDesktop ? undefined : '100%'}
               >
                 {overview.data.recentReverseQuestions.length > 0 ? (
@@ -241,10 +243,10 @@ export function KnowledgeHomeScreen() {
                   ))
                 ) : (
                   <KnowledgeEmpty
-                    action={<AppButton onPress={() => setCreateCategory('reverse')}>添加逆質問</AppButton>}
+                    action={<AppButton onPress={() => setCreateCategory('reverse')}>{t('knowledge:addReverse')}</AppButton>}
                     icon={<CircleHelp color="$accentStrong" size={19} />}
                     softTone="$accentSoft"
-                    message="还没有准备逆質問"
+                    message={t('knowledge:noReverse')}
                   />
                 )}
               </KnowledgeModule>
@@ -264,6 +266,7 @@ export function KnowledgeHomeScreen() {
 }
 
 function AnswerGenerator() {
+  const { t } = useTranslation('knowledge');
   const generate = useAction(api.knowledgeAi.generateAnswer);
   const createItem = useMutation(api.knowledgeItems.create);
   const [question, setQuestion] = useState('');
@@ -272,22 +275,24 @@ function AnswerGenerator() {
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [messageIsSuccess, setMessageIsSuccess] = useState(false);
 
   async function runGeneration() {
     if (!question.trim() || generating) return;
     setGenerating(true);
     setMessage(null);
+    setMessageIsSuccess(false);
     try {
       const result = await generate({ question });
       if (result.status === 'no_material') {
-        setMessage('暂时没有找到足够的相关回答素材。可以先添加相关知识，或记录更多面试回答后再生成。');
+        setMessage(t('ai.noMaterial'));
         return;
       }
       setDraft(result.draft);
       setReferences(result.references);
       analytics.aiAnswerGenerated({ used_reference_count: result.references.length });
     } catch {
-      setMessage('生成失败，请重试；现有草稿已保留。');
+      setMessage(t('ai.generateFailed'));
     } finally {
       setGenerating(false);
     }
@@ -297,15 +302,17 @@ function AnswerGenerator() {
     if (!question.trim() || !draft.trim() || saving) return;
     setSaving(true);
     setMessage(null);
+    setMessageIsSuccess(false);
     try {
       await createItem({ category: 'qa', title: question, content: draft, note: null });
       analytics.knowledgeItemCreated({
         category: 'qa',
         creation_source: 'ai_generated_saved',
       });
-      setMessage('已保存为独立的问题回答。');
+      setMessage(t('ai.saved'));
+      setMessageIsSuccess(true);
     } catch {
-      setMessage('保存失败，请重试。');
+      setMessage(t('ai.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -313,23 +320,23 @@ function AnswerGenerator() {
 
   return (
     <YStack bg="$surface" borderColor="$border" borderWidth={1} gap="$base" p="$lg" style={{ borderRadius: 16 }}>
-      <XStack gap="$sm" style={{ alignItems: 'center' }}><Sparkles color="$accentStrong" size={20} /><Text color="$text" fontSize={21} fontWeight="600">AI 回答生成</Text></XStack>
-      <Text color="$textSecondary" lineHeight={22}>输入新问题，系统会先从你的「问题回答」中严格筛选素材，再生成可编辑草稿。</Text>
-      <TextArea minH={88} color="$text" placeholder="例如：请介绍一次你推动团队解决问题的经历" placeholderTextColor="$textMuted" value={question} onChangeText={setQuestion} style={{ borderRadius: 12 }} />
-      <AppButton variant="primary" disabled={!question.trim() || generating} onPress={() => void runGeneration()} style={{ alignSelf: 'flex-start' }}>{generating ? '生成中...' : draft ? '重新生成' : '生成回答'}</AppButton>
+      <XStack gap="$sm" style={{ alignItems: 'center' }}><Sparkles color="$accentStrong" size={20} /><Text color="$text" fontSize={21} fontWeight="600">{t('ai.title')}</Text></XStack>
+      <Text color="$textSecondary" lineHeight={22}>{t('ai.description')}</Text>
+      <TextArea minH={88} color="$text" placeholder={t('ai.placeholder')} placeholderTextColor="$textMuted" value={question} onChangeText={setQuestion} style={{ borderRadius: 12 }} />
+      <AppButton variant="primary" disabled={!question.trim() || generating} onPress={() => void runGeneration()} style={{ alignSelf: 'flex-start' }}>{generating ? t('ai.generating') : draft ? t('ai.regenerate') : t('ai.generate')}</AppButton>
       {draft ? (
         <YStack borderTopColor="$border" borderTopWidth={1} gap="$base" pt="$base">
-          <Text color="$text" fontWeight="600">回答草稿</Text>
+          <Text color="$text" fontWeight="600">{t('ai.draft')}</Text>
           <TextArea minH={220} color="$text" value={draft} onChangeText={setDraft} style={{ borderRadius: 12 }} />
           {references.length > 0 ? (
-            <YStack gap="$xs"><Text color="$textMuted" fontSize={12} fontWeight="600">参考了 {references.length} 条知识</Text>{references.map((item) => (
+            <YStack gap="$xs"><Text color="$textMuted" fontSize={12} fontWeight="600">{t('ai.references', { count: references.length })}</Text>{references.map((item) => (
               <Link key={item.knowledgeItemId} href={`/knowledge/items?item=${item.knowledgeItemId}` as Href} asChild><Text color="$accentStrong" cursor="pointer" fontSize={13}>{item.sourceCompanyName ? `${item.sourceCompanyName} / ` : ''}{item.title}</Text></Link>
             ))}</YStack>
           ) : null}
-          <AppButton variant="secondary" disabled={saving || !draft.trim()} onPress={() => void saveDraft()} style={{ alignSelf: 'flex-start' }}>{saving ? '保存中...' : '保存到我的知识'}</AppButton>
+          <AppButton variant="secondary" disabled={saving || !draft.trim()} onPress={() => void saveDraft()} style={{ alignSelf: 'flex-start' }}>{saving ? t('common:states.saving') : t('ai.save')}</AppButton>
         </YStack>
       ) : null}
-      {message ? <Text color={message.startsWith('已保存') ? '$successStrong' : '$warningStrong'}>{message}</Text> : null}
+      {message ? <Text color={messageIsSuccess ? '$successStrong' : '$warningStrong'}>{message}</Text> : null}
     </YStack>
   );
 }
@@ -442,6 +449,7 @@ function KnowledgeModule({
 }
 
 function ViewAllLink({ href }: { href: Href }) {
+  const { t } = useTranslation('knowledge');
   return (
     <Link href={href} asChild>
       <XStack
@@ -459,7 +467,7 @@ function ViewAllLink({ href }: { href: Href }) {
         style={{ alignItems: 'center', borderRadius: 8 }}
       >
         <Text color="$textSecondary" fontSize={13} fontWeight="600">
-          查看全部
+          {t('viewAll')}
         </Text>
         <ArrowRight color="$textMuted" size={15} />
       </XStack>
@@ -591,12 +599,13 @@ function KnowledgeEmpty({
 }
 
 function KnowledgeOverviewSkeleton({ isDesktop }: { isDesktop: boolean }) {
+  const { t } = useTranslation('knowledge');
   return (
     <YStack gap="$lg">
       <KnowledgeGroup
         isDesktop={isDesktop}
-        title="系统帮我总结"
-        subtitle="根据你的面试记录自动整理值得关注的重点"
+        title={t('summaryGroup')}
+        subtitle={t('summarySubtitle')}
       >
         <KnowledgeModuleSkeleton rows={3} width="100%" />
         <XStack
@@ -617,8 +626,8 @@ function KnowledgeOverviewSkeleton({ isDesktop }: { isDesktop: boolean }) {
       </KnowledgeGroup>
       <KnowledgeGroup
         isDesktop={isDesktop}
-        title="我的个人资产"
-        subtitle="积累可以反复使用的回答与提问素材"
+        title={t('assets')}
+        subtitle={t('assetsSubtitle')}
       >
         <XStack
           gap="$base"

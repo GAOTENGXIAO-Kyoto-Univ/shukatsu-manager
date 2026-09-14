@@ -80,7 +80,7 @@ export const update = mutation({
     );
 
     if (collision) {
-      throw new Error("已存在同名企业");
+      throw new Error("COMPANY_DUPLICATE");
     }
 
     const industry = normalizeOptionalString(args.industry);

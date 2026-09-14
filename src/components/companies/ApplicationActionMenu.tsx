@@ -1,5 +1,6 @@
 import { Trash2 } from '@tamagui/lucide-icons-2';
 import { XStack, YStack, Text } from 'tamagui';
+import { useTranslation } from 'react-i18next';
 
 import type { ApplicationListItem } from './types';
 import { ResponsiveOverlay } from './ResponsiveOverlay';
@@ -15,11 +16,12 @@ export function ApplicationActionMenu({
   onClose,
   onRequestDelete,
 }: ApplicationActionMenuProps) {
+  const { t } = useTranslation('companies');
   return (
     <ResponsiveOverlay
       open={Boolean(application)}
       onClose={onClose}
-      title="操作"
+      title={t('detail.actions')}
       desktopPresentation="popover"
       width={320}
     >
@@ -41,7 +43,7 @@ export function ApplicationActionMenu({
           >
             <Trash2 color="$danger" size={18} />
             <Text color="$danger" fontWeight="600">
-              删除应聘记录
+              {t('deleteDialog.action')}
             </Text>
           </XStack>
         </YStack>

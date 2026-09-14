@@ -2,6 +2,7 @@ import { ArrowRight } from '@tamagui/lucide-icons-2';
 import { useQuery_experimental as useQuery } from 'convex/react';
 import { Href, Link, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Text, XStack, YStack } from 'tamagui';
 
 import { api } from '../../../convex/_generated/api';
@@ -9,6 +10,7 @@ import type { Id } from '../../../convex/_generated/dataModel';
 import { AppButton } from '@/components/ui/AppButton';
 import { LoadingState, MessageState } from '@/components/ui/States';
 import { KnowledgeEmpty, KnowledgeHeader, KnowledgePage, SearchInput } from './KnowledgeLayout';
+import { getSelectionStepDisplayName, type SelectionStepPresetKey } from '@/components/selection/selectionConstants';
 
 type QuestionSummary = {
   questionGroupId: Id<'interviewQuestionGroups'>;
@@ -18,6 +20,7 @@ type QuestionSummary = {
   latestOccurrence: number;
   latestCompanyName: string;
   latestStepName: string;
+  latestStepPresetKey?: SelectionStepPresetKey;
   poorCount: number;
   evaluatedCount: number;
   poorRate: number;
@@ -31,7 +34,7 @@ type QuestionHistory = {
   evaluation?: 'good' | 'neutral' | 'poor';
   occurrenceAt: number;
   company: { name: string };
-  selectionStep: { selectionStepId: Id<'selectionSteps'>; name: string };
+  selectionStep: { selectionStepId: Id<'selectionSteps'>; name: string; presetKey?: SelectionStepPresetKey };
   applicationId: Id<'applications'>;
   knowledgeItemId?: Id<'knowledgeItems'>;
 };
@@ -50,6 +53,7 @@ export function WeakAnswersScreen() {
 }
 
 function QuestionListState({ mode, state }: { mode: Mode; state: { status: string; data?: unknown } }) {
+  const { t } = useTranslation(['knowledge', 'common']);
   const [search, setSearch] = useState('');
   const normalized = search.trim().toLocaleLowerCase();
   const items = useMemo(
@@ -63,19 +67,20 @@ function QuestionListState({ mode, state }: { mode: Mode; state: { status: strin
   return (
     <KnowledgePage>
       <KnowledgeHeader
-        title={frequent ? '高频面试问题' : '经常回答不好'}
-        description={frequent ? '从完整面试历史中汇总反复出现的问题。' : '只统计被明确评价为「需要改进」的问题。'}
+        title={frequent ? t('knowledge:frequent') : t('knowledge:weakAnswers')}
+        description={frequent ? t('knowledge:groups.frequentDescription') : t('knowledge:groups.weakDescription')}
       />
-      <SearchInput value={search} onChangeText={setSearch} placeholder="搜索代表问题..." />
-      {state.status === 'pending' ? <LoadingState message="正在汇总历史..." /> : null}
-      {state.status === 'error' ? <MessageState message="汇总读取失败" actionLabel="重试" onAction={() => window.location.reload()} /> : null}
-      {state.status === 'success' && items.length === 0 ? <KnowledgeEmpty message={normalized ? '没有符合条件的问题' : frequent ? '还没有出现两次以上的问题' : '还没有两次以上的「需要改进」评价'} /> : null}
+      <SearchInput value={search} onChangeText={setSearch} placeholder={t('knowledge:groups.searchQuestion')} />
+      {state.status === 'pending' ? <LoadingState message={t('knowledge:groups.aggregating')} /> : null}
+      {state.status === 'error' ? <MessageState message={t('knowledge:groups.aggregateFailed')} actionLabel={t('common:actions.retry')} onAction={() => window.location.reload()} /> : null}
+      {state.status === 'success' && items.length === 0 ? <KnowledgeEmpty message={normalized ? t('knowledge:groups.noQuestionMatches') : frequent ? t('knowledge:groups.noFrequent') : t('knowledge:groups.noWeak')} /> : null}
       {items.length > 0 ? <YStack borderTopColor="$border" borderTopWidth={1}>{items.map((item) => <QuestionSummaryRow key={item.questionGroupId} item={item} mode={mode} />)}</YStack> : null}
     </KnowledgePage>
   );
 }
 
 function QuestionSummaryRow({ item, mode }: { item: QuestionSummary; mode: Mode }) {
+  const { t } = useTranslation('knowledge');
   const href = `/knowledge/${mode === 'frequent' ? 'frequent' : 'weak-answers'}/${item.questionGroupId}` as Href;
   return (
     <Link href={href} asChild>
@@ -83,11 +88,11 @@ function QuestionSummaryRow({ item, mode }: { item: QuestionSummary; mode: Mode 
         <YStack flex={1} gap="$xs" style={{ minWidth: 0 }}>
           <Text color="$text" fontSize={18} fontWeight="600">{item.title}</Text>
           {mode === 'frequent' ? (
-            <Text color="$textSecondary">被问 {item.questionCount} 次 · 来自 {item.distinctCompanyCount} 家公司</Text>
+            <Text color="$textSecondary">{t('frequency', { count: item.questionCount, companies: item.distinctCompanyCount })}</Text>
           ) : (
-            <Text color="$textSecondary">评价为「需要改进」：{item.poorCount} 次 · 已评价：{item.evaluatedCount} 次 · 表现不佳率：{Math.round(item.poorRate * 100)}%</Text>
+            <Text color="$textSecondary">{t('poorCount', { count: item.poorCount })} · {t('poorRate', { count: item.evaluatedCount, rate: Math.round(item.poorRate * 100) })}</Text>
           )}
-          <Text color="$textMuted" fontSize={13}>最近一次：{item.latestCompanyName}</Text>
+          <Text color="$textMuted" fontSize={13}>{t('latest', { company: item.latestCompanyName })}</Text>
         </YStack>
         <ArrowRight color="$textMuted" size={19} />
       </XStack>
@@ -112,10 +117,11 @@ export function WeakAnswerDetailScreen() {
 }
 
 function QuestionDetailState({ mode, state }: { mode: Mode; state: { status: string; data?: unknown } }) {
-  if (state.status === 'pending') return <KnowledgePage><LoadingState message="正在加载问题历史..." /></KnowledgePage>;
-  if (state.status === 'error') return <KnowledgePage><MessageState message="问题历史加载失败" actionLabel="返回" onAction={() => window.history.back()} /></KnowledgePage>;
+  const { t } = useTranslation(['knowledge', 'common', 'selection']);
+  if (state.status === 'pending') return <KnowledgePage><LoadingState message={t('knowledge:groups.historyLoading')} /></KnowledgePage>;
+  if (state.status === 'error') return <KnowledgePage><MessageState message={t('knowledge:groups.historyFailed')} actionLabel={t('common:actions.back')} onAction={() => window.history.back()} /></KnowledgePage>;
   const detail = state.data as QuestionDetail | null | undefined;
-  if (!detail) return <KnowledgePage><KnowledgeHeader title="记录不存在" /><KnowledgeEmpty message="该问题组不存在或无权访问" /></KnowledgePage>;
+  if (!detail) return <KnowledgePage><KnowledgeHeader title={t('knowledge:groups.missing')} /><KnowledgeEmpty message={t('knowledge:groups.missingQuestion')} /></KnowledgePage>;
 
   return (
     <KnowledgePage>
@@ -123,8 +129,8 @@ function QuestionDetailState({ mode, state }: { mode: Mode; state: { status: str
         backHref={(mode === 'frequent' ? '/knowledge/frequent' : '/knowledge/weak-answers') as Href}
         title={detail.title}
         description={mode === 'frequent'
-          ? `被问 ${detail.questionCount} 次 · 来自 ${detail.distinctCompanyCount} 家公司 · 最近一次：${detail.latestCompanyName} · ${detail.latestStepName}`
-          : `评价为「需要改进」：${detail.poorCount} 次 · 已评价：${detail.evaluatedCount} 次 · 表现不佳率：${Math.round(detail.poorRate * 100)}%`}
+          ? `${t('knowledge:frequency', { count: detail.questionCount, companies: detail.distinctCompanyCount })} · ${t('knowledge:latest', { company: detail.latestCompanyName })} · ${getSelectionStepDisplayName({ name: detail.latestStepName, presetKey: detail.latestStepPresetKey }, t)}`
+          : `${t('knowledge:poorCount', { count: detail.poorCount })} · ${t('knowledge:poorRate', { count: detail.evaluatedCount, rate: Math.round(detail.poorRate * 100) })}`}
       />
       <YStack gap="$lg">
         {detail.history.map((item) => <QuestionHistoryRow key={item.interviewQuestionId} item={item} />)}
@@ -133,20 +139,19 @@ function QuestionDetailState({ mode, state }: { mode: Mode; state: { status: str
   );
 }
 
-const evaluationLabels = { good: '良好', neutral: '普通', poor: '需要改进' } as const;
-
 function QuestionHistoryRow({ item }: { item: QuestionHistory }) {
+  const { t } = useTranslation(['knowledge', 'selection']);
   return (
     <YStack borderBottomColor="$border" borderBottomWidth={1} gap="$base" pb="$lg">
-      <Text color="$accentStrong" fontSize={14} fontWeight="600">{item.company.name} · {item.selectionStep.name}</Text>
-      <Field label="原始问题" value={item.question} />
-      {item.answer ? <Field label="当时回答" value={item.answer} /> : null}
-      {item.evaluation ? <Field label="评价" value={evaluationLabels[item.evaluation]} /> : null}
+      <Text color="$accentStrong" fontSize={14} fontWeight="600">{item.company.name} · {getSelectionStepDisplayName(item.selectionStep, t)}</Text>
+      <Field label={t('knowledge:groups.originalQuestion')} value={item.question} />
+      {item.answer ? <Field label={t('knowledge:groups.originalAnswer')} value={item.answer} /> : null}
+      {item.evaluation ? <Field label={t('knowledge:groups.evaluation')} value={t(`knowledge:groups.evaluation${item.evaluation === 'good' ? 'Good' : item.evaluation === 'neutral' ? 'Neutral' : 'Poor'}`)} /> : null}
       <XStack gap="$sm" flexWrap="wrap">
         {item.knowledgeItemId ? (
-          <Link href={`/knowledge/items?item=${item.knowledgeItemId}` as Href} asChild><AppButton variant="secondary">查看知识库版本</AppButton></Link>
+          <Link href={`/knowledge/items?item=${item.knowledgeItemId}` as Href} asChild><AppButton variant="secondary">{t('knowledge:groups.knowledgeVersion')}</AppButton></Link>
         ) : null}
-        <Link href={`/applications/${item.applicationId}/interviews/${item.selectionStep.selectionStepId}` as Href} asChild><AppButton variant="ghost">查看面试复盘</AppButton></Link>
+        <Link href={`/applications/${item.applicationId}/interviews/${item.selectionStep.selectionStepId}` as Href} asChild><AppButton variant="ghost">{t('knowledge:groups.interviewReview')}</AppButton></Link>
       </XStack>
     </YStack>
   );

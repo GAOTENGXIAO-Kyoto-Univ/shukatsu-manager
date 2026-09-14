@@ -1,9 +1,11 @@
 import { Clock3, MoreHorizontal } from '@tamagui/lucide-icons-2';
 import { XStack, YStack, Text } from 'tamagui';
+import { useTranslation } from 'react-i18next';
 
 import { SelectionStatusBadge } from '@/components/selection/SelectionStatusBadge';
 import { formatEventDate, getEventLabel } from '@/components/events/eventFormatting';
 import type { ApplicationListItem } from './types';
+import { getSelectionStepDisplayName } from '@/components/selection/selectionConstants';
 
 type ApplicationRowProps = {
   application: ApplicationListItem;
@@ -12,6 +14,7 @@ type ApplicationRowProps = {
 };
 
 export function ApplicationRow({ application, onOpen, onOpenMenu }: ApplicationRowProps) {
+  const { t } = useTranslation(['companies', 'selection']);
   return (
     <YStack borderBottomColor="$border" borderBottomWidth={1} py="$base">
       <XStack gap="$md" style={{ alignItems: 'flex-start' }}>
@@ -39,13 +42,13 @@ export function ApplicationRow({ application, onOpen, onOpenMenu }: ApplicationR
           {application.currentStage && application.currentStatus ? (
             <XStack gap="$sm" style={{ alignItems: 'center' }}>
               <Text color="$textSecondary" fontSize={13} fontWeight="600">
-                {application.currentStage.name}
+                {getSelectionStepDisplayName(application.currentStage, t)}
               </Text>
               <SelectionStatusBadge status={application.currentStatus} />
             </XStack>
           ) : (
             <Text color="$textMuted" fontSize={13}>
-              尚未设置选考流程
+              {t('selection:status.noSteps')}
             </Text>
           )}
           {application.nextEvent ? (
@@ -53,13 +56,19 @@ export function ApplicationRow({ application, onOpen, onOpenMenu }: ApplicationR
               <Clock3 color={application.nextEvent.isOverdue ? '$danger' : '$textMuted'} size={14} />
               <Text color={application.nextEvent.isOverdue ? '$danger' : '$textSecondary'} fontSize={13}>
                 {formatEventDate(application.nextEvent)} ·{' '}
-                {getEventLabel(application.nextEvent.stepName, application.nextEvent.timingType)}
+                {getEventLabel(
+                  getSelectionStepDisplayName({
+                    name: application.nextEvent.stepName,
+                    presetKey: application.nextEvent.stepPresetKey,
+                  }, t),
+                  application.nextEvent.timingType,
+                )}
               </Text>
             </XStack>
           ) : null}
         </YStack>
         <XStack
-          aria-label="更多操作"
+          aria-label={t('companies:moreActions')}
           cursor="pointer"
           height={40}
           onPress={() => onOpenMenu(application)}
