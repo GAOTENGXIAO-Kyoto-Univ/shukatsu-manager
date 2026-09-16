@@ -25,8 +25,15 @@ import {
 import {
   getBackfillPresetKey,
   getHistoricalPresetKey,
+  getSelectionStepPresetDefinition,
+  isPresetTypeCompatible,
   shouldClearSelectionStepPreset,
 } from '../convex/lib/selectionPresets.ts';
+import {
+  selectionProcessTemplates,
+  validateCopyStepSelection,
+  validateTemplatePresetSelection,
+} from '../convex/lib/selectionProcessTemplates.ts';
 import {
   eventToFormValuesInJapan,
   formatEventDateForLocale,
@@ -145,6 +152,75 @@ test('historical preset backfill is exact, type-safe, and idempotent', () => {
   assert.equal(
     getBackfillPresetKey({ name: '一面', type: 'interview', presetKey: 'first_interview' }),
     null,
+  );
+});
+
+test('coding test is a localized system preset backed by the web test type', async () => {
+  assert.deepEqual(getSelectionStepPresetDefinition('coding_test'), {
+    name: 'Coding Test',
+    type: 'web_test',
+  });
+  assert.equal(isPresetTypeCompatible('coding_test', 'web_test'), true);
+  assert.equal(isPresetTypeCompatible('coding_test', 'other'), false);
+  assert.equal(getHistoricalPresetKey('Coding Test', 'web_test'), null);
+
+  for (const locale of ['zh-CN', 'ja-JP', 'en-US']) {
+    const translator = await createTranslator(locale);
+    assert.equal(
+      getSelectionStepDisplayName(
+        { name: 'Coding Test', presetKey: 'coding_test' },
+        translator.t.bind(translator),
+      ),
+      'Coding Test',
+    );
+  }
+});
+
+test('selection process templates keep their approved step structures', () => {
+  assert.deepEqual(
+    selectionProcessTemplates.map(({ key, presetKeys }) => [key, [...presetKeys]]),
+    [
+      ['standard', ['es', 'web_test', 'first_interview', 'second_interview', 'final_interview']],
+      ['coding', ['es', 'coding_test', 'first_interview', 'second_interview', 'final_interview']],
+      ['briefing', ['briefing', 'es', 'web_test', 'first_interview', 'second_interview', 'final_interview']],
+      ['group_discussion', ['es', 'web_test', 'group_discussion', 'first_interview', 'second_interview', 'final_interview']],
+    ],
+  );
+
+  assert.deepEqual(
+    validateTemplatePresetSelection('standard', ['final_interview', 'es']),
+    ['final_interview', 'es'],
+  );
+  assert.throws(
+    () => validateTemplatePresetSelection('standard', []),
+    /SELECTION_PROCESS_TEMPLATE_STEPS_INVALID/u,
+  );
+  assert.throws(
+    () => validateTemplatePresetSelection('standard', ['es', 'es']),
+    /SELECTION_PROCESS_TEMPLATE_STEPS_INVALID/u,
+  );
+  assert.throws(
+    () => validateTemplatePresetSelection('standard', ['coding_test']),
+    /SELECTION_PROCESS_TEMPLATE_STEPS_INVALID/u,
+  );
+});
+
+test('copy preview validation permits reorder and deletion but rejects stale sources', () => {
+  assert.deepEqual(
+    validateCopyStepSelection(['a', 'b', 'c'], ['a', 'b', 'c'], ['c', 'a']),
+    ['c', 'a'],
+  );
+  assert.throws(
+    () => validateCopyStepSelection(['a', 'b', 'c'], ['a', 'c'], ['a']),
+    /SELECTION_PROCESS_SOURCE_CHANGED/u,
+  );
+  assert.throws(
+    () => validateCopyStepSelection(['a', 'b', 'c'], ['a', 'b', 'c'], ['d']),
+    /SELECTION_PROCESS_SOURCE_CHANGED/u,
+  );
+  assert.throws(
+    () => validateCopyStepSelection(['a', 'b'], ['a', 'b'], []),
+    /SELECTION_PROCESS_SOURCE_CHANGED/u,
   );
 });
 

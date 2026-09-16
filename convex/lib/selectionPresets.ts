@@ -6,6 +6,7 @@ export const selectionStepPresetKeys = [
   "briefing",
   "es",
   "web_test",
+  "coding_test",
   "group_discussion",
   "first_interview",
   "second_interview",
@@ -20,6 +21,7 @@ export const selectionStepPresetKeyValidator = v.union(
   v.literal("briefing"),
   v.literal("es"),
   v.literal("web_test"),
+  v.literal("coding_test"),
   v.literal("group_discussion"),
   v.literal("first_interview"),
   v.literal("second_interview"),
@@ -32,12 +34,26 @@ const presetTypes: Record<SelectionStepPresetKey, Doc<"selectionSteps">["type"]>
   briefing: "briefing",
   es: "es",
   web_test: "web_test",
+  coding_test: "web_test",
   group_discussion: "group_discussion",
   first_interview: "interview",
   second_interview: "interview",
   third_interview: "interview",
   final_interview: "interview",
   offer_meeting: "offer_meeting",
+};
+
+const presetStorageNames: Record<SelectionStepPresetKey, string> = {
+  briefing: "说明会",
+  es: "ES",
+  web_test: "Web Test",
+  coding_test: "Coding Test",
+  group_discussion: "GD",
+  first_interview: "一面",
+  second_interview: "二面",
+  third_interview: "三面",
+  final_interview: "最终面试",
+  offer_meeting: "Offer面談",
 };
 
 const historicalPresetMatches: Record<
@@ -60,6 +76,13 @@ export function isPresetTypeCompatible(
   type: Doc<"selectionSteps">["type"],
 ) {
   return presetTypes[presetKey] === type;
+}
+
+export function getSelectionStepPresetDefinition(presetKey: SelectionStepPresetKey) {
+  return {
+    name: presetStorageNames[presetKey],
+    type: presetTypes[presetKey],
+  };
 }
 
 export function getHistoricalPresetKey(

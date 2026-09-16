@@ -15,6 +15,8 @@ import { EditCompanyOverlay } from '@/components/applications/EditCompanyOverlay
 import type { ApplicationDetailData, SelectionStepDetail } from '@/components/applications/types';
 import { DeleteApplicationDialog, type DeleteApplicationTarget } from '@/components/companies/DeleteApplicationDialog';
 import { AddSelectionStepOverlay } from '@/components/selection/AddSelectionStepOverlay';
+import { CopySelectionProcessOverlay } from '@/components/selection/CopySelectionProcessOverlay';
+import { SelectionProcessTemplateOverlay } from '@/components/selection/SelectionProcessTemplateOverlay';
 import { ResearchSummary } from '@/components/research/ResearchSummary';
 import { formatEventDate, getEventLabel } from '@/components/events/eventFormatting';
 import { useTimeBucket } from '@/hooks/useTimeBucket';
@@ -58,6 +60,8 @@ export default function ApplicationDetailScreen() {
     applicationId ?? 'missing-application-id',
   );
   const [addStepOpen, setAddStepOpen] = useState(false);
+  const [templateOpen, setTemplateOpen] = useState(false);
+  const [copyProcessOpen, setCopyProcessOpen] = useState(false);
   const [actionMenuOpen, setActionMenuOpen] = useState(false);
   const [editApplicationOpen, setEditApplicationOpen] = useState(false);
   const [editCompanyOpen, setEditCompanyOpen] = useState(false);
@@ -240,7 +244,7 @@ export default function ApplicationDetailScreen() {
             </AppButton>
           </XStack>
 
-          <CurrentStatusPanel application={application} onAddStep={() => setAddStepOpen(true)} />
+          <CurrentStatusPanel application={application} />
 
           <XStack
             gap="$xl"
@@ -289,6 +293,21 @@ export default function ApplicationDetailScreen() {
                   <Text color="$textSecondary" lineHeight={22} style={{ maxWidth: 360, textAlign: 'center' }}>
                     {t('companies:detail.noProcessDescription')}
                   </Text>
+                  <XStack flexWrap="wrap" gap="$sm" style={{ justifyContent: 'center' }}>
+                    <AppButton
+                      icon={<Plus size={18} />}
+                      onPress={() => setAddStepOpen(true)}
+                      variant="primary"
+                    >
+                      {t('selection:actions.addStep')}
+                    </AppButton>
+                    <AppButton onPress={() => setTemplateOpen(true)} variant="secondary">
+                      {t('selection:actions.createFromTemplate')}
+                    </AppButton>
+                    <AppButton onPress={() => setCopyProcessOpen(true)} variant="secondary">
+                      {t('selection:actions.copyOtherProcess')}
+                    </AppButton>
+                  </XStack>
                 </YStack>
               )}
             </YStack>
@@ -316,6 +335,16 @@ export default function ApplicationDetailScreen() {
         applicationId={application.applicationId}
         onClose={() => setAddStepOpen(false)}
         open={addStepOpen}
+      />
+      <SelectionProcessTemplateOverlay
+        applicationId={application.applicationId}
+        onClose={() => setTemplateOpen(false)}
+        open={templateOpen}
+      />
+      <CopySelectionProcessOverlay
+        applicationId={application.applicationId}
+        onClose={() => setCopyProcessOpen(false)}
+        open={copyProcessOpen}
       />
       <SelectionStepActions
         onClose={closeStepActions}
@@ -376,13 +405,7 @@ function PageFrame({ children }: { children: ReactNode }) {
   );
 }
 
-function CurrentStatusPanel({
-  application,
-  onAddStep,
-}: {
-  application: ApplicationDetailData;
-  onAddStep: () => void;
-}) {
+function CurrentStatusPanel({ application }: { application: ApplicationDetailData }) {
   const { t } = useTranslation(['selection', 'companies']);
   return (
     <YStack bg="$surface" gap="$base" p="$lg" style={{ borderRadius: 16 }}>
@@ -424,9 +447,6 @@ function CurrentStatusPanel({
           <Text color="$textSecondary" lineHeight={22}>
             {t('companies:detail.derivedDescription')}
           </Text>
-          <AppButton variant="primary" icon={<Plus size={18} />} onPress={onAddStep} style={{ alignSelf: 'flex-start' }}>
-            {t('selection:actions.addStep')}
-          </AppButton>
         </YStack>
       )}
     </YStack>

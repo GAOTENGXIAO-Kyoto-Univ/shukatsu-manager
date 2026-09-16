@@ -85,13 +85,17 @@ const zhCN = {
       addStep: '添加步骤', editStep: '编辑步骤', stepActions: '步骤操作', moveUp: '上移', moveDown: '下移',
       markComplete: '标记完成', recordInterview: '记录面试', viewInterview: '查看面试复盘',
       addEvent: '添加时间事项', editEvent: '编辑时间事项', deleteEvent: '删除时间事项', joinMeeting: '加入会议',
-      deleteStep: '删除步骤', confirmChange: '确认修改',
+      deleteStep: '删除步骤', confirmChange: '确认修改', removeFromPreview: '从预览中移除',
+      createFromTemplate: '从模板创建', copyOtherProcess: '复制其他岗位流程', createProcess: '创建流程', copyProcess: '复制流程',
     },
     labels: {
       commonSteps: '常用步骤', stepName: '步骤名称', stepType: '步骤类型', completed: '已完成', result: '结果',
       event: '时间事项', location: '地点', meetingUrl: '会议链接', note: '备注', interviewReview: '面试复盘',
     },
-    states: { orderLocked: '顺序锁定', noEvent: '暂无时间事项', updating: '修改中...' },
+    states: {
+      orderLocked: '顺序锁定', noEvent: '暂无时间事项', updating: '修改中...', creatingProcess: '正在创建...', copyingProcess: '正在复制...',
+      loadingCopySources: '正在读取可复制的流程...', loadingPreview: '正在读取流程预览...',
+    },
     result: { unset: '未设置', passed: '通过', failed: '未通过' },
     messages: {
       nameRequired: '步骤名称不能为空', addFailed: '添加失败，请重试', updateFailed: '更新失败，请重试',
@@ -103,6 +107,10 @@ const zhCN = {
       deleteLocked: '已完成的步骤需要先取消完成并清空结果后才能删除。',
       changeTypeTitle: '修改步骤类型？',
       changeTypeDescription: '该步骤已有面试复盘。修改为非面试类型后，面试信息、问题和复盘内容都会被删除。此操作无法撤销。',
+      targetNoLongerEmpty: '当前应聘记录已经有选考步骤，无法继续批量创建。请关闭窗口并确认最新流程。',
+      templateCreateFailed: '无法从模板创建流程，请重试。', previewEmpty: '请至少保留一个步骤。',
+      copySourcesLoadFailed: '无法读取可复制的流程，请重试。', previewLoadFailed: '无法读取流程预览，请重试。',
+      sourceChanged: '来源流程已发生变化或已不可用，请重新选择。', copyFailed: '无法复制流程，请重试。',
     },
     placeholders: { stepName: '技术面试' },
     status: {
@@ -114,9 +122,23 @@ const zhCN = {
       group_discussion: 'GD', offer_meeting: 'Offer面谈', other: '其他',
     },
     preset: {
-      briefing: '说明会', es: 'ES', web_test: 'Web Test', group_discussion: 'GD',
+      briefing: '说明会', es: 'ES', web_test: 'Web Test', coding_test: 'Coding Test', group_discussion: 'GD',
       first_interview: '一面', second_interview: '二面', third_interview: '三面',
       final_interview: '最终面试', offer_meeting: 'Offer面谈', custom: '其他',
+    },
+    templates: {
+      overlayTitle: '从模板创建选考流程', chooseDescription: '选择模板后可以预览、删除步骤并调整顺序，确认前不会保存。',
+      previewDescription: '按需要调整步骤。创建后，各步骤仍可单独编辑。', backToList: '返回模板列表',
+      standard: { title: '标准流程' }, coding: { title: 'Coding Test 流程' },
+      briefing: { title: '说明会开始的流程' }, group_discussion: { title: '包含 GD 的流程' },
+    },
+    copy: {
+      overlayTitle: '复制其他岗位的选考流程', chooseDescription: '先选择企业，再选择该企业下已有选考流程的岗位。',
+      company: '企业', application: '应聘岗位', companyPlaceholder: '搜索企业名称', applicationPlaceholder: '搜索岗位名称',
+      selectCompanyFirst: '请先从候选项中选择企业。', noCompanies: '暂无可选择的企业。', noCompanyMatches: '没有匹配的企业。',
+      noEligibleProcesses: '该企业下没有可复制的选考流程。', noApplicationMatches: '没有匹配的应聘岗位。', stepCount: '{{count}} 个步骤',
+      previewTitle: '复制预览', structureOnlyExplanation: '只复制步骤名称、类型和顺序；完成状态、结果、日程、面试记录和历史不会被复制。',
+      sourceUnavailable: '来源流程已为空或不可用，请重新选择。',
     },
   },
   calendar: {
@@ -283,13 +305,17 @@ const jaJP = {
       addStep: 'ステップを追加', editStep: 'ステップを編集', stepActions: 'ステップ操作', moveUp: '上へ', moveDown: '下へ',
       markComplete: '完了にする', recordInterview: '面接を記録', viewInterview: '面接の振り返りを見る',
       addEvent: '日程を追加', editEvent: '日程を編集', deleteEvent: '日程を削除', joinMeeting: 'ミーティングに参加',
-      deleteStep: 'ステップを削除', confirmChange: '変更を確定',
+      deleteStep: 'ステップを削除', confirmChange: '変更を確定', removeFromPreview: 'プレビューから削除',
+      createFromTemplate: 'テンプレートから作成', copyOtherProcess: '他の応募からコピー', createProcess: 'フローを作成', copyProcess: 'フローをコピー',
     },
     labels: {
       commonSteps: 'よく使うステップ', stepName: 'ステップ名', stepType: 'ステップ種別', completed: '完了', result: '結果',
       event: '日程', location: '場所', meetingUrl: 'ミーティングURL', note: 'メモ', interviewReview: '面接の振り返り',
     },
-    states: { orderLocked: '順序固定', noEvent: '日程はありません', updating: '変更中...' },
+    states: {
+      orderLocked: '順序固定', noEvent: '日程はありません', updating: '変更中...', creatingProcess: '作成中...', copyingProcess: 'コピー中...',
+      loadingCopySources: 'コピーできるフローを読み込んでいます...', loadingPreview: 'フローのプレビューを読み込んでいます...',
+    },
     result: { unset: '未設定', passed: '合格', failed: '不合格' },
     messages: {
       nameRequired: 'ステップ名を入力してください', addFailed: '追加に失敗しました。もう一度お試しください', updateFailed: '更新に失敗しました。もう一度お試しください',
@@ -301,6 +327,10 @@ const jaJP = {
       deleteLocked: '完了を解除して結果を未設定にすると、このステップを削除できます。',
       changeTypeTitle: 'ステップ種別を変更しますか？',
       changeTypeDescription: 'このステップには面接の振り返りがあります。面接以外に変更すると、面接情報、質問、振り返りが削除されます。この操作は取り消せません。',
+      targetNoLongerEmpty: 'この応募にはすでに選考ステップがあるため、一括作成できません。画面を閉じて最新のフローを確認してください。',
+      templateCreateFailed: 'テンプレートからフローを作成できませんでした。', previewEmpty: '少なくとも1つのステップを残してください。',
+      copySourcesLoadFailed: 'コピー元のフローを読み込めませんでした。', previewLoadFailed: 'フローのプレビューを読み込めませんでした。',
+      sourceChanged: 'コピー元のフローが変更されたか、利用できなくなりました。選び直してください。', copyFailed: 'フローをコピーできませんでした。',
     },
     placeholders: { stepName: '技術面接' },
     status: {
@@ -312,9 +342,23 @@ const jaJP = {
       group_discussion: 'GD', offer_meeting: 'Offer面談', other: 'その他',
     },
     preset: {
-      briefing: '説明会', es: 'ES', web_test: 'Web Test', group_discussion: 'GD',
+      briefing: '説明会', es: 'ES', web_test: 'Web Test', coding_test: 'Coding Test', group_discussion: 'GD',
       first_interview: '一次面接', second_interview: '二次面接', third_interview: '三次面接',
       final_interview: '最終面接', offer_meeting: 'Offer面談', custom: 'その他',
+    },
+    templates: {
+      overlayTitle: 'テンプレートから選考フローを作成', chooseDescription: 'テンプレートを選ぶと、保存前にステップの削除と並べ替えができます。',
+      previewDescription: '必要に応じてステップを調整してください。作成後も各ステップを編集できます。', backToList: 'テンプレート一覧へ戻る',
+      standard: { title: '標準フロー' }, coding: { title: 'Coding Test あり' },
+      briefing: { title: '説明会から始まるフロー' }, group_discussion: { title: 'GD あり' },
+    },
+    copy: {
+      overlayTitle: '他の応募から選考フローをコピー', chooseDescription: '企業を選び、その企業で選考フローが登録されている応募職種を選んでください。',
+      company: '企業', application: '応募職種', companyPlaceholder: '企業名を検索', applicationPlaceholder: '職種名を検索',
+      selectCompanyFirst: '候補から企業を選択してください。', noCompanies: '選択できる企業がありません。', noCompanyMatches: '一致する企業がありません。',
+      noEligibleProcesses: 'この企業にはコピーできる選考フローがありません。', noApplicationMatches: '一致する応募職種がありません。', stepCount: '{{count}}ステップ',
+      previewTitle: 'コピープレビュー', structureOnlyExplanation: 'ステップ名・種別・順序だけをコピーします。完了状態、結果、日程、面接記録、履歴はコピーされません。',
+      sourceUnavailable: 'コピー元のフローが空、または利用できません。選び直してください。',
     },
   },
   calendar: {
@@ -481,13 +525,17 @@ const enUS = {
       addStep: 'Add step', editStep: 'Edit step', stepActions: 'Step actions', moveUp: 'Move up', moveDown: 'Move down',
       markComplete: 'Mark complete', recordInterview: 'Record interview', viewInterview: 'View interview review',
       addEvent: 'Add schedule item', editEvent: 'Edit schedule item', deleteEvent: 'Delete schedule item', joinMeeting: 'Join meeting',
-      deleteStep: 'Delete step', confirmChange: 'Confirm change',
+      deleteStep: 'Delete step', confirmChange: 'Confirm change', removeFromPreview: 'Remove from preview',
+      createFromTemplate: 'Create from template', copyOtherProcess: 'Copy another role’s process', createProcess: 'Create process', copyProcess: 'Copy process',
     },
     labels: {
       commonSteps: 'Common steps', stepName: 'Step name', stepType: 'Step type', completed: 'Completed', result: 'Result',
       event: 'Schedule item', location: 'Location', meetingUrl: 'Meeting link', note: 'Notes', interviewReview: 'Interview review',
     },
-    states: { orderLocked: 'Order locked', noEvent: 'No schedule item', updating: 'Updating...' },
+    states: {
+      orderLocked: 'Order locked', noEvent: 'No schedule item', updating: 'Updating...', creatingProcess: 'Creating...', copyingProcess: 'Copying...',
+      loadingCopySources: 'Loading reusable processes...', loadingPreview: 'Loading process preview...',
+    },
     result: { unset: 'Not set', passed: 'Passed', failed: 'Not passed' },
     messages: {
       nameRequired: 'Enter a step name', addFailed: 'Could not add the step. Please try again.', updateFailed: 'Could not update. Please try again.',
@@ -499,6 +547,10 @@ const enUS = {
       deleteLocked: 'Clear the completed state and result before deleting this step.',
       changeTypeTitle: 'Change step type?',
       changeTypeDescription: 'This step has an interview review. Changing it to a non-interview type will delete the interview details, questions, and review. This cannot be undone.',
+      targetNoLongerEmpty: 'This application already has selection steps, so a process cannot be created in bulk. Close this window and review the latest process.',
+      templateCreateFailed: 'Could not create the process from this template.', previewEmpty: 'Keep at least one step.',
+      copySourcesLoadFailed: 'Could not load reusable processes.', previewLoadFailed: 'Could not load the process preview.',
+      sourceChanged: 'The source process changed or is no longer available. Select it again.', copyFailed: 'Could not copy the process.',
     },
     placeholders: { stepName: 'Technical interview' },
     status: {
@@ -510,9 +562,23 @@ const enUS = {
       group_discussion: 'Group discussion', offer_meeting: 'Offer meeting', other: 'Other',
     },
     preset: {
-      briefing: 'Company Briefing', es: 'ES', web_test: 'Web Test', group_discussion: 'Group Discussion',
+      briefing: 'Company Briefing', es: 'ES', web_test: 'Web Test', coding_test: 'Coding Test', group_discussion: 'Group Discussion',
       first_interview: 'First Interview', second_interview: 'Second Interview', third_interview: 'Third Interview',
       final_interview: 'Final Interview', offer_meeting: 'Offer Meeting', custom: 'Other',
+    },
+    templates: {
+      overlayTitle: 'Create a selection process from a template', chooseDescription: 'Choose a template, then preview, remove, and reorder steps before anything is saved.',
+      previewDescription: 'Adjust the steps as needed. Each step can still be edited after creation.', backToList: 'Back to templates',
+      standard: { title: 'Standard process' }, coding: { title: 'Coding test process' },
+      briefing: { title: 'Briefing-first process' }, group_discussion: { title: 'Process with group discussion' },
+    },
+    copy: {
+      overlayTitle: 'Copy another role’s selection process', chooseDescription: 'Choose a company, then choose one of its roles that already has a selection process.',
+      company: 'Company', application: 'Role', companyPlaceholder: 'Search companies', applicationPlaceholder: 'Search roles',
+      selectCompanyFirst: 'Select a company from the suggestions first.', noCompanies: 'No companies are available.', noCompanyMatches: 'No companies match your search.',
+      noEligibleProcesses: 'This company has no selection process available to copy.', noApplicationMatches: 'No roles match your search.', stepCount: '{{count}} steps',
+      previewTitle: 'Copy preview', structureOnlyExplanation: 'Only step names, types, and order are copied. Completion state, results, schedules, interview records, and history are not copied.',
+      sourceUnavailable: 'The source process is empty or unavailable. Select it again.',
     },
   },
   calendar: {
