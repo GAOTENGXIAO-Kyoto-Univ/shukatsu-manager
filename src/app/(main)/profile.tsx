@@ -1,15 +1,17 @@
 import { useClerk, useUser } from '@clerk/expo';
 import {
   ChevronRight,
+  Download,
   LogOut,
   Languages,
   Mail,
   Pencil,
   ShieldCheck,
+  Upload,
   UserRound,
 } from '@tamagui/lucide-icons-2';
-import { useQuery_experimental as useQuery } from 'convex/react';
-import { ReactNode, useState } from 'react';
+import { useConvex, useQuery_experimental as useQuery } from 'convex/react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Image, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Button, Text, XStack, YStack, useMedia } from 'tamagui';
@@ -17,9 +19,21 @@ import { Button, Text, XStack, YStack, useMedia } from 'tamagui';
 import { api } from '../../../convex/_generated/api';
 import { warmPaperColors } from '../../../tamagui.config';
 import { DisplayNameEditor } from '@/components/profile/DisplayNameEditor';
+import {
+  BackupRestoreOverlay,
+  type BackupRestorePreview,
+} from '@/components/profile/BackupRestoreOverlay';
 import { LanguageSelectorOverlay } from '@/components/profile/LanguageSelectorOverlay';
 import { AppButton } from '@/components/ui/AppButton';
+import { AppToast } from '@/components/ui/AppToast';
 import { getCurrentAppLocale, LOCALE_DISPLAY_NAMES } from '@/i18n';
+import {
+  downloadBackupJson,
+  getBackupErrorCode,
+  pickBackupJsonFile,
+  readAndPreflightBackupFile,
+  type BackupClientErrorCode,
+} from '@/lib/backup';
 
 export default function ProfileScreen() {
   const { t } = useTranslation(['profile', 'common']);
@@ -27,8 +41,19 @@ export default function ProfileScreen() {
   const isDesktop = Boolean(media.md);
   const { isLoaded, isSignedIn, user } = useUser();
   const clerk = useClerk();
+  const convex = useConvex();
   const [editorOpen, setEditorOpen] = useState(false);
   const [languageOpen, setLanguageOpen] = useState(false);
+  const [restoreOpen, setRestoreOpen] = useState(false);
+  const [restoreSessionKey, setRestoreSessionKey] = useState(0);
+  const [backupJson, setBackupJson] = useState<string | null>(null);
+  const [backupPreview, setBackupPreview] = useState<BackupRestorePreview | null>(null);
+  const [backupValidationError, setBackupValidationError] =
+    useState<BackupClientErrorCode | null>(null);
+  const [isValidatingBackup, setIsValidatingBackup] = useState(false);
+  const [isExportingBackup, setIsExportingBackup] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const restoreRequestIdRef = useRef(0);
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [retryToken, setRetryToken] = useState(0);
@@ -36,6 +61,89 @@ export default function ProfileScreen() {
     query: api.users.current,
     args: { retryToken },
   });
+
+  useEffect(() => {
+    if (!toastMessage) {
+      return undefined;
+    }
+
+    const handle = window.setTimeout(() => setToastMessage(null), 2600);
+    return () => window.clearTimeout(handle);
+  }, [toastMessage]);
+
+  async function exportBackup() {
+    if (isExportingBackup) {
+      return false;
+    }
+
+    setIsExportingBackup(true);
+
+    try {
+      const backup = await convex.query(api.backups.exportBackup, {});
+      downloadBackupJson(backup, backup.exportedAt);
+      setToastMessage(t('profile:backup.exportSuccess'));
+      return true;
+    } catch (error) {
+      setToastMessage(
+        getBackupErrorCode(error) === 'too_large'
+          ? t('profile:backup.errors.too_large')
+          : t('profile:backup.exportFailed'),
+      );
+      return false;
+    } finally {
+      setIsExportingBackup(false);
+    }
+  }
+
+  async function chooseBackupForRestore() {
+    const file = await pickBackupJsonFile();
+
+    if (!file) {
+      return;
+    }
+
+    const requestId = restoreRequestIdRef.current + 1;
+    restoreRequestIdRef.current = requestId;
+    setRestoreSessionKey((value) => value + 1);
+    setRestoreOpen(true);
+    setBackupJson(null);
+    setBackupPreview(null);
+    setBackupValidationError(null);
+    setIsValidatingBackup(true);
+
+    try {
+      const selectedBackupJson = await readAndPreflightBackupFile(file);
+      const preview = await convex.query(api.backups.previewRestore, {
+        backupJson: selectedBackupJson,
+      });
+
+      if (restoreRequestIdRef.current !== requestId) {
+        return;
+      }
+
+      setBackupJson(selectedBackupJson);
+      setBackupPreview(preview);
+    } catch (error) {
+      if (restoreRequestIdRef.current !== requestId) {
+        return;
+      }
+
+      setBackupValidationError(getBackupErrorCode(error) ?? 'unknown');
+    } finally {
+      if (restoreRequestIdRef.current === requestId) {
+        setIsValidatingBackup(false);
+      }
+    }
+  }
+
+  function closeRestore() {
+    restoreRequestIdRef.current += 1;
+    setRestoreOpen(false);
+    setBackupJson(null);
+    setBackupPreview(null);
+    setBackupValidationError(null);
+    setIsValidatingBackup(false);
+  }
 
   async function handleSignOut() {
     setLogoutError(null);
@@ -139,6 +247,22 @@ export default function ProfileScreen() {
         </InfoRow>
       </ProfileSection>
 
+      <ProfileSection title={t('profile:backup.dataManagement')}>
+        <ActionRow
+          borderBottom
+          disabled={isExportingBackup}
+          icon={<Download color="$accentStrong" size={20} />}
+          label={t('profile:backup.export')}
+          value={isExportingBackup ? t('profile:backup.exporting') : undefined}
+          onPress={() => void exportBackup()}
+        />
+        <ActionRow
+          icon={<Upload color="$accentStrong" size={20} />}
+          label={t('profile:backup.restore')}
+          onPress={() => void chooseBackupForRestore()}
+        />
+      </ProfileSection>
+
       <ProfileSection title={t('profile:appSettings')}>
         <ActionRow
           icon={<Languages color="$accentStrong" size={20} />}
@@ -198,6 +322,19 @@ export default function ProfileScreen() {
       {languageOpen ? (
         <LanguageSelectorOverlay onClose={() => setLanguageOpen(false)} open />
       ) : null}
+      <BackupRestoreOverlay
+        key={restoreSessionKey}
+        backupJson={backupJson}
+        onClose={closeRestore}
+        onExportCurrent={exportBackup}
+        onRestoreSuccess={() => setToastMessage(t('profile:backup.restoreSuccess'))}
+        open={restoreOpen}
+        preview={backupPreview}
+        timezone={currentUser.timezone}
+        validationError={backupValidationError}
+        validating={isValidatingBackup}
+      />
+      <AppToast message={toastMessage} />
     </ProfilePageFrame>
   );
 }
@@ -275,11 +412,15 @@ function InfoRow({
 }
 
 function ActionRow({
+  borderBottom = false,
+  disabled = false,
   icon,
   label,
   onPress,
   value,
 }: {
+  borderBottom?: boolean;
+  disabled?: boolean;
   icon: ReactNode;
   label: string;
   onPress: () => void;
@@ -289,7 +430,10 @@ function ActionRow({
     <Button
       unstyled
       aria-label={label}
-      cursor="pointer"
+      borderBottomColor="$border"
+      borderBottomWidth={borderBottom ? 1 : 0}
+      cursor={disabled ? 'not-allowed' : 'pointer'}
+      disabled={disabled}
       minH={64}
       px="$base"
       pressStyle={{ opacity: 0.72 }}
@@ -300,7 +444,7 @@ function ActionRow({
         outlineWidth: 2,
       }}
       style={{ justifyContent: 'center' }}
-      onPress={onPress}
+      onPress={disabled ? undefined : onPress}
     >
       <XStack width="100%" gap="$md" style={{ alignItems: 'center' }}>
         <YStack
@@ -370,6 +514,10 @@ function ProfileSkeleton() {
           <SkeletonRow />
           <SkeletonRow />
         </YStack>
+      </YStack>
+      <YStack gap="$sm">
+        <SkeletonBlock height={16} width={44} />
+        <SkeletonBlock height={128} width="100%" radius={16} />
       </YStack>
       <YStack gap="$sm">
         <SkeletonBlock height={16} width={44} />

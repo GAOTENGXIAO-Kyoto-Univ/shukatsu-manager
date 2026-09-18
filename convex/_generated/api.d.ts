@@ -9,6 +9,7 @@
  */
 
 import type * as applications from "../applications.js";
+import type * as backups from "../backups.js";
 import type * as companies from "../companies.js";
 import type * as dashboard from "../dashboard.js";
 import type * as events from "../events.js";
@@ -20,6 +21,13 @@ import type * as knowledgeItems from "../knowledgeItems.js";
 import type * as knowledgeMaintenance from "../knowledgeMaintenance.js";
 import type * as knowledgeOverview from "../knowledgeOverview.js";
 import type * as lib_authorization from "../lib/authorization.js";
+import type * as lib_backup_constants from "../lib/backup/constants.js";
+import type * as lib_backup_data from "../lib/backup/data.js";
+import type * as lib_backup_export from "../lib/backup/export.js";
+import type * as lib_backup_format from "../lib/backup/format.js";
+import type * as lib_backup_migrations from "../lib/backup/migrations.js";
+import type * as lib_backup_restore from "../lib/backup/restore.js";
+import type * as lib_backup_validation from "../lib/backup/validation.js";
 import type * as lib_deepseek from "../lib/deepseek.js";
 import type * as lib_eventTime from "../lib/eventTime.js";
 import type * as lib_interviews from "../lib/interviews.js";
@@ -47,6 +55,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   applications: typeof applications;
+  backups: typeof backups;
   companies: typeof companies;
   dashboard: typeof dashboard;
   events: typeof events;
@@ -58,6 +67,13 @@ declare const fullApi: ApiFromModules<{
   knowledgeMaintenance: typeof knowledgeMaintenance;
   knowledgeOverview: typeof knowledgeOverview;
   "lib/authorization": typeof lib_authorization;
+  "lib/backup/constants": typeof lib_backup_constants;
+  "lib/backup/data": typeof lib_backup_data;
+  "lib/backup/export": typeof lib_backup_export;
+  "lib/backup/format": typeof lib_backup_format;
+  "lib/backup/migrations": typeof lib_backup_migrations;
+  "lib/backup/restore": typeof lib_backup_restore;
+  "lib/backup/validation": typeof lib_backup_validation;
   "lib/deepseek": typeof lib_deepseek;
   "lib/eventTime": typeof lib_eventTime;
   "lib/interviews": typeof lib_interviews;

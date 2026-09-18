@@ -196,6 +196,15 @@ const zhCN = {
     accountUnavailable: '账号信息暂不可用，请稍后重试',
     localeSaveFailed: '语言已在当前设备切换，但账号偏好保存失败，请重试。',
     displayNameHelp: '最多 50 个字符，留空即可清除。', displayNameTooLong: '显示名称不能超过 50 个字符',
+    backup: {
+      dataManagement: '数据管理', export: '导出数据', exporting: '正在导出...', restore: '从备份恢复', exportSuccess: '备份已导出', exportFailed: '导出失败，请重试',
+      restoreTitle: '从备份恢复', validating: '正在检查备份...', validatingDescription: '正在验证文件内容与数据关系。', previewTitle: '备份内容', backupTime: '备份时间：{{value}}',
+      counts: { companies: '企业', applications: '应聘记录', selectionSteps: '选考步骤', events: '日程', interviewDetails: '面试记录', interviewQuestions: '面试问题', knowledgeItems: '知识', researchItems: '企业研究' },
+      restoreThisBackup: '恢复此备份', overwriteWarningTitle: '覆盖当前全部数据？', overwriteWarningDescription: '恢复会删除当前账号中的所有就活数据，并以该备份完整替换。此操作无法撤销。',
+      exportPromptTitle: '建议先导出当前数据', exportPromptDescription: '你可以先下载当前账号的备份，再决定是否覆盖。导出后不会自动开始恢复。', exportCurrentFirst: '先导出当前数据', overwriteDirectly: '直接覆盖',
+      restoring: '正在恢复...', restoringDescription: '请保持此页面开启。恢复完成前无法关闭此窗口。', restoreSuccess: '备份恢复完成', restoreFailed: '恢复失败', restoreFailedUnchanged: '恢复未完成，当前账号的数据没有被更改。',
+      errors: { parse: '无法读取此 JSON 文件', format: '这不是有效的本应用备份文件', version: '不支持此备份版本', incomplete: '备份内容不完整或计数不一致', relations: '备份中的数据关系无效', too_large: '备份数据过大，无法安全处理', read: '无法读取所选文件', unknown: '检查备份时发生错误，请重试' },
+    },
   },
   research: {
     title: '企业研究', records: '{{count}} 条记录', add: '添加研究', edit: '编辑企业研究', search: '搜索企业研究...', category: '分类', scope: '范围', all: '全部', companyShared: '{{company}} 共通', applicationOnly: '当前应聘专属', applicationScope: '仅 {{company}} + {{job}}',
@@ -416,6 +425,15 @@ const jaJP = {
     accountUnavailable: 'アカウント情報を取得できません。後でもう一度お試しください',
     localeSaveFailed: 'この端末の言語は切り替わりましたが、アカウント設定を保存できませんでした。もう一度お試しください。',
     displayNameHelp: '50文字以内。空欄で保存すると削除できます。', displayNameTooLong: '表示名は50文字以内で入力してください',
+    backup: {
+      dataManagement: 'データ管理', export: 'データをエクスポート', exporting: 'エクスポート中...', restore: 'バックアップから復元', exportSuccess: 'バックアップをエクスポートしました', exportFailed: 'エクスポートできませんでした。もう一度お試しください',
+      restoreTitle: 'バックアップから復元', validating: 'バックアップを確認中...', validatingDescription: 'ファイル内容とデータの関連を検証しています。', previewTitle: 'バックアップ内容', backupTime: 'バックアップ日時：{{value}}',
+      counts: { companies: '企業', applications: '応募', selectionSteps: '選考ステップ', events: '予定', interviewDetails: '面接記録', interviewQuestions: '面接質問', knowledgeItems: 'ナレッジ', researchItems: '企業研究' },
+      restoreThisBackup: 'このバックアップを復元', overwriteWarningTitle: '現在のデータをすべて上書きしますか？', overwriteWarningDescription: '復元すると、このアカウントの就活データはすべて削除され、バックアップの内容に置き換わります。この操作は元に戻せません。',
+      exportPromptTitle: '先に現在のデータをエクスポートできます', exportPromptDescription: '上書きする前に、現在のアカウントのバックアップをダウンロードできます。エクスポート後に復元は自動で始まりません。', exportCurrentFirst: '先に現在のデータを保存', overwriteDirectly: 'そのまま上書き',
+      restoring: '復元中...', restoringDescription: 'このページを開いたままにしてください。完了するまでこの画面は閉じられません。', restoreSuccess: 'バックアップを復元しました', restoreFailed: '復元できませんでした', restoreFailedUnchanged: '復元は完了しておらず、現在のアカウントデータは変更されていません。',
+      errors: { parse: 'JSONファイルを読み取れません', format: 'このアプリの有効なバックアップではありません', version: 'このバックアップのバージョンには対応していません', incomplete: 'バックアップ内容が不完全、または件数が一致しません', relations: 'バックアップ内のデータ関連が正しくありません', too_large: 'バックアップが大きすぎるため安全に処理できません', read: '選択したファイルを読み取れません', unknown: 'バックアップの確認中にエラーが発生しました' },
+    },
   },
   research: {
     title: '企業研究', records: '{{count}}件', add: '研究を追加', edit: '企業研究を編集', search: '企業研究を検索...', category: '分類', scope: '範囲', all: 'すべて', companyShared: '{{company}} 共通', applicationOnly: 'この応募のみ', applicationScope: '{{company}} + {{job}} のみ',
@@ -636,6 +654,15 @@ const enUS = {
     accountUnavailable: 'Account information is unavailable. Please try again later.',
     localeSaveFailed: 'The language changed on this device, but your account preference could not be saved. Please try again.',
     displayNameHelp: 'Up to 50 characters. Leave blank to clear it.', displayNameTooLong: 'Display name must be 50 characters or fewer',
+    backup: {
+      dataManagement: 'Data management', export: 'Export data', exporting: 'Exporting...', restore: 'Restore from backup', exportSuccess: 'Backup exported', exportFailed: 'Could not export your data. Please try again.',
+      restoreTitle: 'Restore from backup', validating: 'Checking backup...', validatingDescription: 'Validating the file contents and data relationships.', previewTitle: 'Backup contents', backupTime: 'Backup time: {{value}}',
+      counts: { companies: 'Companies', applications: 'Applications', selectionSteps: 'Selection steps', events: 'Events', interviewDetails: 'Interview records', interviewQuestions: 'Interview questions', knowledgeItems: 'Knowledge items', researchItems: 'Company research' },
+      restoreThisBackup: 'Restore this backup', overwriteWarningTitle: 'Replace all current data?', overwriteWarningDescription: 'Restoring deletes all job-search data in this account and completely replaces it with this backup. This cannot be undone.',
+      exportPromptTitle: 'Export your current data first', exportPromptDescription: 'You can download a backup of the current account before replacing it. Restoring will not start automatically after export.', exportCurrentFirst: 'Export current data', overwriteDirectly: 'Replace without exporting',
+      restoring: 'Restoring...', restoringDescription: 'Keep this page open. This window cannot be closed until the restore finishes.', restoreSuccess: 'Backup restored', restoreFailed: 'Restore failed', restoreFailedUnchanged: 'The restore did not complete, and your current account data was not changed.',
+      errors: { parse: 'Could not parse this JSON file', format: 'This is not a valid backup from this app', version: 'This backup version is not supported', incomplete: 'The backup is incomplete or its counts do not match', relations: 'The backup contains invalid data relationships', too_large: 'This backup is too large to process safely', read: 'Could not read the selected file', unknown: 'An error occurred while checking the backup' },
+    },
   },
   research: {
     title: 'Company research', records: '{{count}} records', add: 'Add research', edit: 'Edit company research', search: 'Search company research...', category: 'Category', scope: 'Scope', all: 'All', companyShared: 'Shared across {{company}}', applicationOnly: 'This application only', applicationScope: '{{company}} + {{job}} only',

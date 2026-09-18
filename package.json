@@ -48,7 +48,7 @@
     "export:web": "expo export --platform web",
     "lint": "expo lint",
     "i18n:check": "node --no-warnings --experimental-strip-types scripts/i18n-check.mjs",
-    "test": "node --no-warnings --experimental-strip-types --loader ./scripts/typescript-loader.mjs --test scripts/i18n-tests.mjs"
+    "test": "node --no-warnings --experimental-strip-types --loader ./scripts/typescript-loader.mjs --test scripts/i18n-tests.mjs scripts/backup-tests.mjs"
   },
   "private": true
 }
