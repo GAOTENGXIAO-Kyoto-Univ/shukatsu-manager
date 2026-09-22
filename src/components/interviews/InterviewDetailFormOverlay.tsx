@@ -3,7 +3,7 @@ import { useMutation } from 'convex/react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { ScrollView } from 'react-native';
-import { Text, TextArea, XStack, YStack } from 'tamagui';
+import { Text, XStack, YStack } from 'tamagui';
 import { z } from 'zod';
 
 import { api } from '../../../convex/_generated/api';
@@ -11,6 +11,7 @@ import type { Id } from '../../../convex/_generated/dataModel';
 import { ResponsiveOverlay } from '@/components/companies/ResponsiveOverlay';
 import { AppButton } from '@/components/ui/AppButton';
 import { AppInput } from '@/components/ui/AppInput';
+import { VoiceTextArea } from '@/components/voice/VoiceTextArea';
 import { analytics } from '@/lib/analytics';
 import type { InterviewDetailData, InterviewFormat } from './types';
 
@@ -166,7 +167,7 @@ function InterviewInfoForm({
               control={control}
               name="interviewerInfo"
               render={({ field }) => (
-                <TextArea minH={120} color="$text" placeholder={t('interview:placeholders.interviewer')} placeholderTextColor="$textMuted" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} style={{ borderRadius: 12 }} />
+                <VoiceTextArea minH={120} color="$text" placeholder={t('interview:placeholders.interviewer')} placeholderTextColor="$textMuted" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} />
               )}
             />
           </FormField>
@@ -265,7 +266,7 @@ function LongTextField({
         control={control}
         name={name}
         render={({ field }) => (
-          <TextArea minH={128} color="$text" placeholder={placeholder} placeholderTextColor="$textMuted" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} style={{ borderRadius: 12 }} />
+          <VoiceTextArea minH={128} color="$text" placeholder={placeholder} placeholderTextColor="$textMuted" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} />
         )}
       />
     </FormField>

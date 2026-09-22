@@ -6,13 +6,14 @@ import { useTranslation } from 'react-i18next';
 import type { ElementRef, ReactElement } from 'react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { ScrollView } from 'react-native';
-import { Switch, Text, TextArea, XStack, YStack } from 'tamagui';
+import { Switch, Text, XStack, YStack } from 'tamagui';
 import { z } from 'zod';
 
 import { api } from '../../../convex/_generated/api';
 import { ResponsiveOverlay } from '@/components/companies/ResponsiveOverlay';
 import { AppButton } from '@/components/ui/AppButton';
 import { AppInput } from '@/components/ui/AppInput';
+import { VoiceTextArea } from '@/components/voice/VoiceTextArea';
 import { researchCategoryOptions } from './researchConstants';
 import type {
   ResearchApplicationContext,
@@ -87,8 +88,9 @@ export function ResearchItemOverlay({
   const { t } = useTranslation(['research', 'common']);
   const createResearchItem = useMutation(api.researchItems.create);
   const updateResearchItem = useMutation(api.researchItems.update);
-  const editorRef = useRef<ElementRef<typeof TextArea>>(null);
+  const editorRef = useRef<ElementRef<typeof VoiceTextArea>>(null);
   const [editorSelection, setEditorSelection] = useState<EditorSelection>({ start: 0, end: 0 });
+  const [voiceActive, setVoiceActive] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const initialValues = getInitialValues(item);
@@ -120,6 +122,8 @@ export function ResearchItemOverlay({
   }
 
   function applyFormat(format: ContentFormat) {
+    if (voiceActive) return;
+
     const content = getValues('content');
     const result = formatContent(content, editorSelection, format, t);
 
@@ -256,16 +260,16 @@ export function ResearchItemOverlay({
 
             <FormSection label={`${t('research:form.content')} *`}>
               <XStack flexWrap="wrap" gap="$xs">
-                <FormatButton icon={<Bold size={16} />} label={t('research:form.bold')} onPress={() => applyFormat('bold')} />
-                <FormatButton icon={<List size={16} />} label={t('research:form.unordered')} onPress={() => applyFormat('unordered-list')} />
-                <FormatButton icon={<ListOrdered size={16} />} label={t('research:form.ordered')} onPress={() => applyFormat('ordered-list')} />
-                <FormatButton icon={<Link2 size={16} />} label={t('research:form.link')} onPress={() => applyFormat('link')} />
+                <FormatButton disabled={voiceActive} icon={<Bold size={16} />} label={t('research:form.bold')} onPress={() => applyFormat('bold')} />
+                <FormatButton disabled={voiceActive} icon={<List size={16} />} label={t('research:form.unordered')} onPress={() => applyFormat('unordered-list')} />
+                <FormatButton disabled={voiceActive} icon={<ListOrdered size={16} />} label={t('research:form.ordered')} onPress={() => applyFormat('ordered-list')} />
+                <FormatButton disabled={voiceActive} icon={<Link2 size={16} />} label={t('research:form.link')} onPress={() => applyFormat('link')} />
               </XStack>
               <Controller
                 control={control}
                 name="content"
                 render={({ field }) => (
-                  <TextArea
+                  <VoiceTextArea
                     ref={editorRef}
                     minH={220}
                     color="$text"
@@ -275,8 +279,9 @@ export function ResearchItemOverlay({
                     value={field.value}
                     onBlur={field.onBlur}
                     onChangeText={field.onChange}
+                    onVoiceActiveChange={setVoiceActive}
+                    onVoiceConfirmSelection={setEditorSelection}
                     onSelectionChange={(event) => setEditorSelection(event.nativeEvent.selection)}
-                    style={{ borderRadius: 12 }}
                   />
                 )}
               />
@@ -474,9 +479,19 @@ function CategoryOption({
   );
 }
 
-function FormatButton({ icon, label, onPress }: { icon: ReactElement; label: string; onPress: () => void }) {
+function FormatButton({
+  disabled,
+  icon,
+  label,
+  onPress,
+}: {
+  disabled: boolean;
+  icon: ReactElement;
+  label: string;
+  onPress: () => void;
+}) {
   return (
-    <AppButton variant="secondary" icon={icon} onPress={onPress}>
+    <AppButton disabled={disabled} variant="secondary" icon={icon} onPress={onPress}>
       {label}
     </AppButton>
   );

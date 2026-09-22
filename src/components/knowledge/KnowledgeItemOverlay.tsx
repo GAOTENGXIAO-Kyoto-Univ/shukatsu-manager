@@ -11,6 +11,7 @@ import { api } from '../../../convex/_generated/api';
 import { ResponsiveOverlay } from '@/components/companies/ResponsiveOverlay';
 import { AppButton } from '@/components/ui/AppButton';
 import { AppInput } from '@/components/ui/AppInput';
+import { VoiceTextArea } from '@/components/voice/VoiceTextArea';
 import { analytics } from '@/lib/analytics';
 import type { KnowledgeCategory, KnowledgeItemData } from './types';
 
@@ -132,7 +133,7 @@ export function KnowledgeItemOverlay({
               control={control}
               name="content"
               render={({ field }) => (
-                <TextArea minH={160} color="$text" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} style={{ borderRadius: 12 }} />
+                <VoiceTextArea minH={160} color="$text" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} />
               )}
             />
           </FormField>

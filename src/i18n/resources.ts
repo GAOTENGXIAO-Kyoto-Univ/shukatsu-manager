@@ -30,6 +30,28 @@ const zhCN = {
     eventTiming: { scheduledPrefix: '预定于', deadlinePrefix: '截止于', deadlineSuffix: '截止' },
     removeFilter: '移除筛选：{{label}}',
   },
+  voice: {
+    languages: { 'ja-JP': '日本語', 'zh-CN': '中文', 'en-US': 'English' },
+    status: {
+      waitingPermission: '正在等待麦克风权限…',
+      listening: '正在听取语音…',
+      ready: '识别结果已就绪',
+      interrupted: '识别已中断',
+    },
+    actions: {
+      start: '开始语音输入',
+      stop: '停止语音输入',
+      cancel: '取消本轮语音输入',
+      confirm: '确认语音输入',
+      chooseLanguage: '选择语音识别语言',
+    },
+    errors: {
+      noSpeech: '没有检测到语音，请重试。',
+      permissionDenied: '无法使用麦克风，请在浏览器设置中允许麦克风权限。',
+      unavailable: '当前浏览器暂不支持语音输入。',
+      recognitionFailed: '语音识别已中断，请重试。',
+    },
+  },
   auth: {
     language: '语言',
     signInWebOnly: '登录目前仅支持 Web。',
@@ -259,6 +281,28 @@ const jaJP = {
     eventTiming: { scheduledPrefix: '予定', deadlinePrefix: '締切', deadlineSuffix: '締切' },
     removeFilter: '絞り込みを解除：{{label}}',
   },
+  voice: {
+    languages: { 'ja-JP': '日本語', 'zh-CN': '中文', 'en-US': 'English' },
+    status: {
+      waitingPermission: 'マイクの許可を待っています…',
+      listening: '音声を聞き取っています…',
+      ready: '認識結果を確認できます',
+      interrupted: '音声認識が中断されました',
+    },
+    actions: {
+      start: '音声入力を開始',
+      stop: '音声入力を停止',
+      cancel: '今回の音声入力をキャンセル',
+      confirm: '音声入力を確定',
+      chooseLanguage: '音声認識の言語を選択',
+    },
+    errors: {
+      noSpeech: '音声を検出できませんでした。もう一度お試しください。',
+      permissionDenied: 'マイクを使用できません。ブラウザの設定でマイクを許可してください。',
+      unavailable: 'このブラウザは音声入力に対応していません。',
+      recognitionFailed: '音声認識が中断されました。もう一度お試しください。',
+    },
+  },
   auth: {
     language: '言語',
     signInWebOnly: 'ログインは現在 Web のみ対応しています。',
@@ -487,6 +531,28 @@ const enUS = {
     brand: { title: 'Shukatsu Manager', subtitle: 'Stay on track' },
     eventTiming: { scheduledPrefix: 'Scheduled', deadlinePrefix: 'Due', deadlineSuffix: 'deadline' },
     removeFilter: 'Remove filter: {{label}}',
+  },
+  voice: {
+    languages: { 'ja-JP': '日本語', 'zh-CN': '中文', 'en-US': 'English' },
+    status: {
+      waitingPermission: 'Waiting for microphone permission…',
+      listening: 'Listening…',
+      ready: 'Transcript ready',
+      interrupted: 'Recognition interrupted',
+    },
+    actions: {
+      start: 'Start voice input',
+      stop: 'Stop voice input',
+      cancel: 'Cancel this voice input',
+      confirm: 'Confirm voice input',
+      chooseLanguage: 'Choose speech recognition language',
+    },
+    errors: {
+      noSpeech: 'No speech was detected. Please try again.',
+      permissionDenied: 'The microphone is unavailable. Allow microphone access in your browser settings.',
+      unavailable: 'Voice input is not supported in this browser.',
+      recognitionFailed: 'Speech recognition was interrupted. Please try again.',
+    },
   },
   auth: {
     language: 'Language',

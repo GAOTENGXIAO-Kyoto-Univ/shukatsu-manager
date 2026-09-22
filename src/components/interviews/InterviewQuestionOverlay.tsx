@@ -3,13 +3,14 @@ import { useMutation } from 'convex/react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { ScrollView } from 'react-native';
-import { Text, TextArea, XStack, YStack } from 'tamagui';
+import { Text, XStack, YStack } from 'tamagui';
 import { z } from 'zod';
 
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { ResponsiveOverlay } from '@/components/companies/ResponsiveOverlay';
 import { AppButton } from '@/components/ui/AppButton';
+import { VoiceTextArea } from '@/components/voice/VoiceTextArea';
 import { analytics } from '@/lib/analytics';
 import type { InterviewEvaluation, InterviewQuestionData } from './types';
 
@@ -92,7 +93,7 @@ export function InterviewQuestionOverlay({
               control={control}
               name="question"
               render={({ field }) => (
-                <TextArea minH={96} color="$text" placeholder={t('interview:placeholders.question')} placeholderTextColor="$textMuted" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} style={{ borderRadius: 12 }} />
+                <VoiceTextArea minH={96} color="$text" placeholder={t('interview:placeholders.question')} placeholderTextColor="$textMuted" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} />
               )}
             />
             {errors.question ? <Text color="$danger">{t('interview:questionRequired')}</Text> : null}
@@ -102,7 +103,7 @@ export function InterviewQuestionOverlay({
               control={control}
               name="answer"
               render={({ field }) => (
-                <TextArea minH={150} color="$text" placeholder={t('interview:placeholders.answer')} placeholderTextColor="$textMuted" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} style={{ borderRadius: 12 }} />
+                <VoiceTextArea minH={150} color="$text" placeholder={t('interview:placeholders.answer')} placeholderTextColor="$textMuted" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} />
               )}
             />
           </FormField>
@@ -124,7 +125,7 @@ export function InterviewQuestionOverlay({
               control={control}
               name="note"
               render={({ field }) => (
-                <TextArea minH={120} color="$text" placeholder={t('interview:placeholders.note')} placeholderTextColor="$textMuted" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} style={{ borderRadius: 12 }} />
+                <VoiceTextArea minH={120} color="$text" placeholder={t('interview:placeholders.note')} placeholderTextColor="$textMuted" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} />
               )}
             />
           </FormField>
