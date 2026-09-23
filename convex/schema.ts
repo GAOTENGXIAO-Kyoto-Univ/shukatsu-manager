@@ -13,6 +13,33 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_authUserId", ["authUserId"]),
 
+  googleConnections: defineTable({
+    userId: v.id("users"),
+    googleAccountId: v.string(),
+    email: v.optional(v.string()),
+    grantedScopes: v.array(v.string()),
+    gmailEnabled: v.boolean(),
+    credentialStatus: v.union(
+      v.literal("active"),
+      v.literal("reauth_required"),
+    ),
+    refreshTokenCiphertext: v.string(),
+    refreshTokenIv: v.string(),
+    tokenKeyVersion: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_user_id", ["userId"]),
+
+  googleOAuthStates: defineTable({
+    userId: v.id("users"),
+    stateHash: v.string(),
+    requestedCapability: v.literal("gmail"),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_state_hash", ["stateHash"])
+    .index("by_user_id", ["userId"]),
+
   companies: defineTable({
     userId: v.id("users"),
     name: v.string(),

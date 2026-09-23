@@ -24,6 +24,7 @@ import {
   type BackupRestorePreview,
 } from '@/components/profile/BackupRestoreOverlay';
 import { LanguageSelectorOverlay } from '@/components/profile/LanguageSelectorOverlay';
+import { GoogleIntegrationSection } from '@/components/profile/GoogleIntegrationSection';
 import { AppButton } from '@/components/ui/AppButton';
 import { AppToast } from '@/components/ui/AppToast';
 import { getCurrentAppLocale, LOCALE_DISPLAY_NAMES } from '@/i18n';
@@ -262,6 +263,8 @@ export default function ProfileScreen() {
           onPress={() => void chooseBackupForRestore()}
         />
       </ProfileSection>
+
+      <GoogleIntegrationSection />
 
       <ProfileSection title={t('profile:appSettings')}>
         <ActionRow
