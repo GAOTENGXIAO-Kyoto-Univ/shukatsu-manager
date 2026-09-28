@@ -36,8 +36,11 @@ const features: Feature[] = [
 const steps = ['company', 'selection', 'review', 'knowledge'] as const;
 
 const signInHref = '/sign-in' as Href;
+const homeHref = '/' as Href;
+const privacyHref = '/privacy' as Href;
+const termsHref = '/terms' as Href;
 
-const MAX_CONTENT_WIDTH = 1120;
+export const LANDING_MAX_CONTENT_WIDTH = 1120;
 
 export function LandingPage() {
   return (
@@ -65,7 +68,7 @@ function LandingContainer({ children }: { children: ReactNode }) {
   return (
     <YStack
       gap={isDesktop ? 96 : 64}
-      maxW={MAX_CONTENT_WIDTH}
+      maxW={LANDING_MAX_CONTENT_WIDTH}
       px={isDesktop ? '$xl' : '$base'}
       py={isDesktop ? 72 : 48}
       width="100%"
@@ -75,7 +78,7 @@ function LandingContainer({ children }: { children: ReactNode }) {
   );
 }
 
-function LandingHeader() {
+export function LandingHeader() {
   const { t } = useTranslation('landing');
   const media = useMedia();
   const isDesktop = Boolean(media.md);
@@ -88,15 +91,17 @@ function LandingHeader() {
       style={{ alignItems: 'center' }}
     >
       <XStack
-        maxW={MAX_CONTENT_WIDTH}
+        maxW={LANDING_MAX_CONTENT_WIDTH}
         px={isDesktop ? '$xl' : '$base'}
         py="$sm"
         width="100%"
         style={{ alignItems: 'center', justifyContent: 'space-between' }}
       >
-        <Text color="$text" fontSize={isDesktop ? 16 : 15} fontWeight="600" letterSpacing={0.3}>
-          shukatsu-manager
-        </Text>
+        <Link href={homeHref} asChild>
+          <Text color="$text" fontSize={isDesktop ? 16 : 15} fontWeight="600" letterSpacing={0.3}>
+            shukatsu-manager
+          </Text>
+        </Link>
         <Link href={signInHref} asChild>
           <AppButton variant="secondary">{t('signIn')}</AppButton>
         </Link>
@@ -380,7 +385,7 @@ function FinalCtaSection() {
   );
 }
 
-function LandingFooter() {
+export function LandingFooter() {
   const { t } = useTranslation('landing');
   const media = useMedia();
   const isDesktop = Boolean(media.md);
@@ -390,7 +395,7 @@ function LandingFooter() {
       borderTopColor="$border"
       borderTopWidth={1}
       gap="$sm"
-      maxW={MAX_CONTENT_WIDTH}
+      maxW={LANDING_MAX_CONTENT_WIDTH}
       px={isDesktop ? '$xl' : '$base'}
       py={isDesktop ? '$xl' : '$lg'}
       width="100%"
@@ -402,6 +407,18 @@ function LandingFooter() {
       <Text color="$textMuted" fontSize={13}>
         {t('tagline')}
       </Text>
+      <XStack flexWrap="wrap" gap="$lg" style={{ justifyContent: 'center' }}>
+        <Link href={privacyHref} asChild>
+          <Text color="$textSecondary" fontSize={13} style={{ textDecorationLine: 'underline' }}>
+            Privacy Policy
+          </Text>
+        </Link>
+        <Link href={termsHref} asChild>
+          <Text color="$textSecondary" fontSize={13} style={{ textDecorationLine: 'underline' }}>
+            Terms of Service
+          </Text>
+        </Link>
+      </XStack>
       <Text color="$textMuted" fontSize={12}>
         © 2026 shukatsu-manager
       </Text>
