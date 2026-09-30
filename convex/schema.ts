@@ -19,6 +19,8 @@ export default defineSchema({
     email: v.optional(v.string()),
     grantedScopes: v.array(v.string()),
     gmailEnabled: v.boolean(),
+    // Optional only for records created before Calendar support was deployed.
+    calendarEnabled: v.optional(v.boolean()),
     credentialStatus: v.union(
       v.literal("active"),
       v.literal("reauth_required"),
@@ -33,7 +35,11 @@ export default defineSchema({
   googleOAuthStates: defineTable({
     userId: v.id("users"),
     stateHash: v.string(),
-    requestedCapability: v.literal("gmail"),
+    requestedCapability: v.union(
+      v.literal("gmail"),
+      v.literal("calendar_read"),
+      v.literal("calendar_write"),
+    ),
     expiresAt: v.number(),
     createdAt: v.number(),
   })
@@ -127,6 +133,22 @@ export default defineSchema({
     .index("by_selectionStepId", ["selectionStepId"])
     .index("by_datetime", ["datetime"])
     .index("by_userId_datetime", ["userId", "datetime"]),
+
+  googleCalendarEventLinks: defineTable({
+    userId: v.id("users"),
+    eventId: v.id("events"),
+    googleCalendarId: v.string(),
+    googleEventId: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_event_id", ["eventId"])
+    .index("by_user_calendar_event", [
+      "userId",
+      "googleCalendarId",
+      "googleEventId",
+    ])
+    .index("by_user_id", ["userId"]),
 
   interviewDetails: defineTable({
     selectionStepId: v.id("selectionSteps"),

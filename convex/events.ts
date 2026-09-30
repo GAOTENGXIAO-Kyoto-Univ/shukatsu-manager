@@ -6,11 +6,8 @@ import {
   getOwnedSelectionStep,
   listSelectionStepsForApplication,
 } from "./lib/authorization";
-import {
-  normalizeEventDateTime,
-  normalizeMeetingUrl,
-  normalizeOptionalEventText,
-} from "./lib/eventTime";
+import { buildEventFields, normalizeIndependentEventTitle } from "./lib/eventData";
+import { deleteGoogleCalendarLinkForEvent } from "./lib/googleCalendarLinks";
 import { getCurrentUserOrThrow } from "./users";
 
 const timingTypeValidator = v.union(v.literal("scheduled"), v.literal("deadline"));
@@ -41,35 +38,6 @@ async function getOwnedEvent(
   }
 
   return event.userId === user._id ? { kind: "independent" as const, user, event } : null;
-}
-
-function eventFields(args: {
-  timingType: "scheduled" | "deadline";
-  date: string;
-  time: string | null;
-  location: string | null;
-  meetingUrl: string | null;
-  note: string | null;
-}) {
-  const normalized = normalizeEventDateTime(args.timingType, args.date, args.time);
-  const location = normalizeOptionalEventText(args.location);
-  const meetingUrl = normalizeMeetingUrl(args.meetingUrl);
-  const note = normalizeOptionalEventText(args.note);
-
-  return {
-    ...normalized,
-    timingType: args.timingType,
-    ...(location ? { location } : {}),
-    ...(meetingUrl ? { meetingUrl } : {}),
-    ...(note ? { note } : {}),
-    updatedAt: Date.now(),
-  };
-}
-
-function normalizeIndependentTitle(title: string) {
-  const normalized = title.trim();
-  if (!normalized) throw new Error("标题不能为空");
-  return normalized;
 }
 
 const eventFormArgs = {
@@ -119,7 +87,7 @@ export const create = mutation({
     return await ctx.db.insert("events", {
       userId: owned.user._id,
       selectionStepId: owned.selectionStep._id,
-      ...eventFields(args),
+      ...buildEventFields(args),
     });
   },
 });
@@ -130,8 +98,8 @@ export const createIndependent = mutation({
     const user = await getCurrentUserOrThrow(ctx);
     return await ctx.db.insert("events", {
       userId: user._id,
-      title: normalizeIndependentTitle(args.title),
-      ...eventFields(args),
+      title: normalizeIndependentEventTitle(args.title),
+      ...buildEventFields(args),
     });
   },
 });
@@ -146,7 +114,7 @@ export const update = mutation({
       await ctx.db.replace(owned.event._id, {
         userId: owned.user._id,
         selectionStepId: owned.selectionStep._id,
-        ...eventFields(args),
+        ...buildEventFields(args),
       });
       return;
     }
@@ -154,8 +122,8 @@ export const update = mutation({
     if (args.title === undefined) throw new Error("标题不能为空");
     await ctx.db.replace(owned.event._id, {
       userId: owned.user._id,
-      title: normalizeIndependentTitle(args.title),
-      ...eventFields(args),
+      title: normalizeIndependentEventTitle(args.title),
+      ...buildEventFields(args),
     });
   },
 });
@@ -165,6 +133,7 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const owned = await getOwnedEvent(ctx, args.eventId);
     if (!owned) throw new Error("时间事项不存在");
+    await deleteGoogleCalendarLinkForEvent(ctx, owned.event._id, owned.user._id);
     await ctx.db.delete(owned.event._id);
   },
 });
@@ -249,20 +218,25 @@ export const listSelectionStepTargets = query({
       for (const application of applications) {
         const steps = await listSelectionStepsForApplication(ctx, application._id);
         const stepTargets = await Promise.all(
-          steps.map(async (step) => ({
-            selectionStepId: step._id,
-            name: step.name,
-            presetKey: step.presetKey,
-            type: step.type,
-            order: step.order,
-            completed: step.completed,
-            result: step.result,
-            hasEvent: Boolean(await getEventByStep(ctx, step._id)),
-          })),
+          steps.map(async (step) => {
+            const event = await getEventByStep(ctx, step._id);
+            return {
+              selectionStepId: step._id,
+              name: step.name,
+              presetKey: step.presetKey,
+              type: step.type,
+              order: step.order,
+              completed: step.completed,
+              result: step.result,
+              hasEvent: Boolean(event),
+              event: event ? toEventDetail(event, step._id) : null,
+            };
+          }),
         );
 
         targets.push({
           applicationId: application._id,
+          companyId: company._id,
           companyName: company.name,
           jobTitle: application.jobTitle,
           steps: stepTargets,

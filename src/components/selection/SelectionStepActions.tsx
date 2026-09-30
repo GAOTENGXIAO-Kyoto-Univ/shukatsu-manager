@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowDown, ArrowUp, CalendarClock, ChevronLeft, ExternalLink, MessageSquareText, Trash2 } from '@tamagui/lucide-icons-2';
+import { ArrowDown, ArrowUp, CalendarClock, CalendarPlus, ChevronLeft, ExternalLink, MessageSquareText, Trash2 } from '@tamagui/lucide-icons-2';
 import { useMutation } from 'convex/react';
 import { Href, useRouter } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
@@ -48,7 +48,7 @@ export function SelectionStepActions({
   step,
   steps,
 }: SelectionStepActionsProps) {
-  const { t } = useTranslation(['selection', 'common']);
+  const { t } = useTranslation(['selection', 'common', 'googleCalendar']);
   const router = useRouter();
   const updateStep = useMutation(api.selectionSteps.update);
   const removeStep = useMutation(api.selectionSteps.remove);
@@ -379,6 +379,18 @@ export function SelectionStepActions({
                     </YStack>
                   ) : (
                     <XStack flexWrap="wrap" gap="$sm">
+                      <AppButton
+                        icon={<CalendarPlus size={16} />}
+                        variant="secondary"
+                        disabled={busy}
+                        onPress={() =>
+                          router.setParams({
+                            googleCalendarExport: activeStep.event?.eventId ?? '',
+                          })
+                        }
+                      >
+                        {t('googleCalendar:actions.export')}
+                      </AppButton>
                       <AppButton variant="secondary" disabled={busy} onPress={() => setEditingEvent(true)}>
                         {t('selection:actions.editEvent')}
                       </AppButton>

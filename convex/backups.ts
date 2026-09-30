@@ -18,6 +18,7 @@ import {
   validateBackupV2,
 } from "./lib/backup/validation";
 import { getCurrentUserOrThrow } from "./users";
+import { deleteGoogleCalendarLinksForUser } from "./lib/googleCalendarLinks";
 
 function rethrowPublicBackupError(error: unknown): never {
   if (error instanceof BackupValidationError) {
@@ -90,6 +91,7 @@ export const restoreBackup = mutation({
         currentEstimatedBytes: estimateOwnedDataBytes(currentData),
         currentRecordCount: getOwnedRecordCount(currentData),
       });
+      await deleteGoogleCalendarLinksForUser(ctx, user._id);
       const rebuild = await restoreValidatedBackup(ctx, user, currentData, backup);
 
       await ctx.scheduler.runAfter(0, internal.backups.rebuildDerivedDataAfterRestore, {

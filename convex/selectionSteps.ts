@@ -28,6 +28,7 @@ import {
   selectionStepPresetKeyValidator,
   shouldClearSelectionStepPreset,
 } from "./lib/selectionPresets";
+import { deleteGoogleCalendarLinkForEvent } from "./lib/googleCalendarLinks";
 
 function toStepDto(step: Doc<"selectionSteps">, event: Doc<"events"> | null, now: number) {
   return {
@@ -233,6 +234,7 @@ export const remove = mutation({
       .unique();
 
     if (event) {
+      await deleteGoogleCalendarLinkForEvent(ctx, event._id, owned.user._id);
       await ctx.db.delete(event._id);
     }
 

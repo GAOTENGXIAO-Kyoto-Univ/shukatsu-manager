@@ -17,6 +17,7 @@ import {
   findInterviewDetailBySelectionStep,
 } from "./lib/interviews";
 import { deleteSelectionProgressHistory } from "./lib/selectionProgressHistory";
+import { deleteGoogleCalendarLinkForEvent } from "./lib/googleCalendarLinks";
 
 const duplicateApplicationMessage = "APPLICATION_DUPLICATE";
 
@@ -357,6 +358,7 @@ export const remove = mutation({
         .unique();
 
       if (event) {
+        await deleteGoogleCalendarLinkForEvent(ctx, event._id, owned.user._id);
         await ctx.db.delete(event._id);
       }
 

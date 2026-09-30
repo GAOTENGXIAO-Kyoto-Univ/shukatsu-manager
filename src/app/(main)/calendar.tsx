@@ -9,6 +9,8 @@ import { Spinner, Text, XStack, YStack, useMedia } from 'tamagui';
 import { api } from '../../../convex/_generated/api';
 import { warmPaperColors } from '../../../tamagui.config';
 import { CalendarEventOverlay } from '@/components/calendar/CalendarEventOverlay';
+import { GoogleCalendarExportOverlay } from '@/components/calendar/GoogleCalendarExportOverlay';
+import type { Id } from '../../../convex/_generated/dataModel';
 import {
   buildMonthCells,
   firstDateOfMonth,
@@ -65,6 +67,7 @@ export default function CalendarScreen() {
   const todayMonth = monthFromDate(today);
   const rawMonth = readRouteParam(params.month);
   const rawDate = readRouteParam(params.date);
+  const exportEventId = readRouteParam(params.googleCalendarExport) as Id<'events'> | undefined;
   const month = normalizeMonth(rawMonth, todayMonth);
   const dateFallback = month === todayMonth ? today : firstDateOfMonth(month);
   const selectedDate = normalizeDate(rawDate, month, dateFallback);
@@ -411,6 +414,16 @@ export default function CalendarScreen() {
           open
         />
       ) : null}
+      <GoogleCalendarExportOverlay
+        eventId={exportEventId ?? null}
+        onClose={() =>
+          router.replace({
+            pathname: '/calendar',
+            params: { month, date: selectedDate },
+          } as Href)
+        }
+        open={Boolean(exportEventId)}
+      />
     </YStack>
   );
 }

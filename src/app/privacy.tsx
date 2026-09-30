@@ -15,20 +15,27 @@ const privacySections: readonly LegalSection[] = [
       'Account and profile information, such as your authentication identifier, email address, display name, language, and timezone. Clerk provides the authentication service used to sign in to Shukatsu Manager.',
       'Job-search information that you choose to enter or import, including companies, applications, selection steps, schedules, deadlines, interview notes, research, and knowledge-base content.',
       'Limited product-usage and technical information, such as feature events, page categories, browser or device information, and diagnostic information. When enabled, PostHog is configured to avoid automatic capture of form inputs and sensitive page text.',
-      'Google account and Gmail information described below, but only after you choose to connect a Google account.',
+      'Google account, Gmail, and Google Calendar information described below, but only after you choose to connect a Google account and authorize the relevant optional feature.',
     ],
   },
   {
-    title: '2. Google account and Gmail data',
+    title: '2. Google account, Gmail, and Google Calendar data',
     paragraphs: [
-      'Connecting Google is optional and requires your explicit authorization. When you connect Google, Shukatsu Manager receives your Google account identifier and email address and requests Gmail read-only access.',
+      'Connecting Google is optional and requires your explicit authorization. When you connect Google, Shukatsu Manager receives your Google account identifier and email address. Gmail and Google Calendar are separate optional capabilities, and the Service requests the permissions needed for the capability you choose to use.',
       'When you open the Gmail import feature or enter a Gmail search query, the Service retrieves a limited list of matching message metadata, such as sender, subject, date, and snippet. The full text content of a message is retrieved only after you choose that message for preview or parsing.',
+      'When you open the Google Calendar import feature, the Service may read the list of calendars available to your Google account, including calendar identifiers, names, time zones, and access roles. After you choose a calendar and date range, the Service retrieves a bounded list of events from that calendar so that you can select one. Event data may include an event identifier, title, start and end time or all-day dates, location, description, and an available meeting link. The selected event is retrieved for preview before import.',
+      'When you explicitly choose “Add to Google Calendar” for a Shukatsu Manager event, the Service may create a new event in the writable Google calendar you select. The data sent to Google may include the event title, start and end information, location, note, and meeting link shown in the confirmation flow.',
     ],
     bullets: [
       'The Service uses the Gmail read-only scope. It cannot send, modify, label, or delete your email.',
       'The Service does not automatically scan your mailbox in the background.',
       'The Service does not read file attachments, images, or the content of messages that you have not selected for preview or import.',
       'Gmail data is used only for the user-initiated email search, preview, parsing, and import workflow.',
+      'For Calendar import, the Service requests read access to the user’s calendar list and calendar events. It does not request Calendar write access merely to import an event.',
+      'For Calendar export, the Service requests event-write access only when you initiate an operation that requires it.',
+      'The Service does not continuously synchronize, monitor, or scan Google Calendar in the background. It does not use Calendar watch channels, webhooks, or periodic synchronization.',
+      'The Service does not automatically modify or delete existing Google Calendar events. If creating a requested Google event succeeds but saving its local association fails, the Service may immediately attempt to delete only that newly created event as a failure-recovery measure.',
+      'Changes made later in Google Calendar are not automatically applied to Shukatsu Manager, and changes made later in Shukatsu Manager are not automatically applied to Google Calendar.',
     ],
   },
   {
@@ -36,12 +43,14 @@ const privacySections: readonly LegalSection[] = [
     paragraphs: [
       'We use your Google email address to identify the connected account. We use selected Gmail message content to suggest companies, roles, selection steps, results, dates, locations, and related job-search information for your review. Nothing is added to your Shukatsu Manager records until you confirm the import.',
       'Email bodies are processed only as needed for the active preview and parsing workflow and are not retained as long-term business records. Information that you review and explicitly import, such as a company name, event date, or selection result, becomes part of your Shukatsu Manager data and is retained like information you enter manually.',
+      'Google Calendar data is used only for user-initiated Calendar browsing, preview, import, and export workflows. When you confirm an import, the selected event fields become a Shukatsu Manager event. When you confirm an export, the selected local event fields are sent to Google to create the requested Google Calendar event.',
+      'The Service stores the identifiers needed to associate the selected Google calendar event with the corresponding Shukatsu Manager event. This association is used to prevent duplicate imports or exports and to show that the event has already been linked. It is not used for continuous synchronization.',
     ],
     bullets: [
       'Google user data is not used for advertising or ad targeting.',
       'Google user data is not sold.',
       'Google user data is not used for purposes unrelated to Shukatsu Manager’s core job-search management functionality.',
-      'We do not intentionally send Gmail message bodies, OAuth tokens, or refresh tokens to PostHog.',
+      'We do not intentionally send Gmail message bodies, Google Calendar event content, OAuth tokens, or refresh tokens to PostHog.',
     ],
   },
   {
@@ -61,7 +70,7 @@ const privacySections: readonly LegalSection[] = [
       'Convex provides backend and database infrastructure and stores application records and encrypted Google connection credentials.',
       'Vercel may provide web hosting and delivery infrastructure and may process ordinary request and technical data when the deployed Service is accessed.',
       'PostHog may process limited product analytics and, when enabled for authenticated non-sensitive pages, privacy-masked session information. Shukatsu Manager disables automatic form capture and masks inputs, sensitive page text, and network bodies; Gmail import routes are not enabled for session recording.',
-      'Google provides the OAuth and Gmail APIs used by the optional integration.',
+      'Google provides the OAuth, Gmail, and Google Calendar APIs used by the optional integrations.',
     ],
   },
   {
@@ -79,18 +88,21 @@ const privacySections: readonly LegalSection[] = [
   {
     title: '8. Retention and deletion',
     paragraphs: [
-      'Application data is retained while your account is active or as needed to provide the Service. Selected Gmail message bodies are not stored as long-term business data. Encrypted Google connection credentials are retained only while the Google connection remains configured.',
-      'You may disable Gmail access in the Service to stop Gmail import requests, or disconnect Google to remove the stored Google connection and credentials from Shukatsu Manager. Disconnecting in Shukatsu Manager does not itself revoke the grant at Google. You can separately revoke access at any time from the third-party access or connections area of your Google Account.',
+      'Application data is retained while your account is active or as needed to provide the Service. Selected Gmail message bodies are not stored as long-term business data. Calendar event fields that you explicitly import are retained as Shukatsu Manager event data, just like events you enter manually. Google calendar and event identifiers used for an import or export association may be retained while that local association exists. Encrypted Google connection credentials are retained only while the Google connection remains configured.',
+      'You may disable Gmail or Google Calendar in the Service to stop new requests for that capability. Because Gmail and Calendar may share one Google connection, disabling only one capability does not necessarily delete the shared credential or previously created local records. Disconnecting Google removes the stored Google connection credentials and Calendar association records from Shukatsu Manager, but does not delete imported local events or events already created in Google Calendar.',
+      'Disconnecting or disabling Google in Shukatsu Manager does not itself revoke the grant at Google. You can separately revoke access at any time from the third-party access or connections area of your Google Account.',
       'For requests concerning your account data or deletion that are not available directly in the Service, contact us at gtx2833474625@gmail.com. We may retain limited information when legally required or necessary to protect the Service.',
     ],
   },
   {
     title: '9. Your choices',
     bullets: [
-      'You can use the core Service without connecting Gmail.',
+      'You can use the core Service without connecting Gmail or Google Calendar.',
       'You choose the search query and the messages to preview, parse, and import.',
+      'For Calendar import, you choose the calendar, date range, event, destination, and final values before anything is written to Shukatsu Manager.',
+      'For Calendar export, you choose the local event and destination calendar and confirm the operation before a Google Calendar event is created.',
       'You can review and edit suggested information before confirming an import.',
-      'You can disable Gmail, disconnect Google in Shukatsu Manager, or revoke access through your Google Account.',
+      'You can disable Gmail or Google Calendar, disconnect Google in Shukatsu Manager, or revoke access through your Google Account.',
     ],
   },
   {
@@ -112,7 +124,7 @@ export default function PrivacyPolicyRoute() {
     <>
       <Stack.Screen options={{ title: 'Privacy Policy | Shukatsu Manager' }} />
       <PublicLegalPage
-        description="This Privacy Policy explains how Shukatsu Manager collects, uses, stores, and shares information when you use the Service, including information accessed through the optional Google and Gmail integration."
+        description="This Privacy Policy explains how Shukatsu Manager collects, uses, stores, and shares information when you use the Service, including information accessed through the optional Google, Gmail, and Google Calendar integrations."
         sections={privacySections}
         title="Privacy Policy"
       />

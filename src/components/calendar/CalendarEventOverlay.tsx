@@ -1,5 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { CalendarPlus } from '@tamagui/lucide-icons-2';
 import { useMutation, useQuery_experimental as useQuery } from 'convex/react';
+import { useRouter } from 'expo-router';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -74,7 +76,8 @@ export function CalendarEventOverlay({
   onClose: () => void;
   open: boolean;
 }) {
-  const { t } = useTranslation(['calendar', 'common', 'selection']);
+  const { t } = useTranslation(['calendar', 'common', 'selection', 'googleCalendar']);
+  const router = useRouter();
   const createIndependent = useMutation(api.events.createIndependent);
   const createSelectionEvent = useMutation(api.events.create);
   const updateEvent = useMutation(api.events.update);
@@ -333,14 +336,26 @@ export function CalendarEventOverlay({
             {saveError ? <Text color="$danger">{saveError}</Text> : null}
             <XStack gap="$sm" flexWrap="wrap" style={{ justifyContent: 'flex-end' }}>
               {event ? (
-                <AppButton
-                  color="$danger"
-                  disabled={isSubmitting}
-                  variant="ghost"
-                  onPress={() => setConfirmingDelete(true)}
-                >
-                  {t('calendar:deleteSchedule')}
-                </AppButton>
+                <>
+                  <AppButton
+                    icon={<CalendarPlus size={16} />}
+                    disabled={isSubmitting}
+                    variant="secondary"
+                    onPress={() =>
+                      router.setParams({ googleCalendarExport: event.eventId })
+                    }
+                  >
+                    {t('googleCalendar:actions.export')}
+                  </AppButton>
+                  <AppButton
+                    color="$danger"
+                    disabled={isSubmitting}
+                    variant="ghost"
+                    onPress={() => setConfirmingDelete(true)}
+                  >
+                    {t('calendar:deleteSchedule')}
+                  </AppButton>
+                </>
               ) : null}
               <AppButton
                 disabled={isSubmitting}

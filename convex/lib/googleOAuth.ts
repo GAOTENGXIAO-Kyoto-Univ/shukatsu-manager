@@ -4,7 +4,37 @@ declare const process: { env: Record<string, string | undefined> };
 
 export const GMAIL_READONLY_SCOPE =
   "https://www.googleapis.com/auth/gmail.readonly";
+export const GOOGLE_CALENDAR_LIST_READONLY_SCOPE =
+  "https://www.googleapis.com/auth/calendar.calendarlist.readonly";
+export const GOOGLE_CALENDAR_EVENTS_READONLY_SCOPE =
+  "https://www.googleapis.com/auth/calendar.events.readonly";
+export const GOOGLE_CALENDAR_EVENTS_SCOPE =
+  "https://www.googleapis.com/auth/calendar.events";
 export const GOOGLE_IDENTITY_SCOPES = ["openid", "email"] as const;
+export type GoogleOAuthCapability = "gmail" | "calendar_read" | "calendar_write";
+
+export function getGoogleCapabilityScopes(capability: GoogleOAuthCapability) {
+  if (capability === "gmail") return [GMAIL_READONLY_SCOPE];
+  if (capability === "calendar_read") {
+    return [GOOGLE_CALENDAR_LIST_READONLY_SCOPE, GOOGLE_CALENDAR_EVENTS_READONLY_SCOPE];
+  }
+  return [GOOGLE_CALENDAR_LIST_READONLY_SCOPE, GOOGLE_CALENDAR_EVENTS_SCOPE];
+}
+
+export function hasGoogleCapability(
+  scopes: readonly string[],
+  capability: GoogleOAuthCapability,
+) {
+  const scopeSet = new Set(scopes);
+  if (capability === "calendar_read") {
+    return (
+      scopeSet.has(GOOGLE_CALENDAR_LIST_READONLY_SCOPE) &&
+      (scopeSet.has(GOOGLE_CALENDAR_EVENTS_READONLY_SCOPE) ||
+        scopeSet.has(GOOGLE_CALENDAR_EVENTS_SCOPE))
+    );
+  }
+  return getGoogleCapabilityScopes(capability).every((scope) => scopeSet.has(scope));
+}
 
 export class GoogleIntegrationError extends Error {
   readonly code: string;
@@ -105,7 +135,10 @@ export async function hashOAuthState(state: string) {
   return bytesToBase64(new Uint8Array(digest));
 }
 
-export function buildGmailAuthorizationUrl(state: string) {
+export function buildGoogleAuthorizationUrl(
+  state: string,
+  capability: GoogleOAuthCapability,
+) {
   const { clientId, redirectUri } = getGoogleOAuthConfiguration();
   const parameters = new URLSearchParams({
     access_type: "offline",
@@ -114,10 +147,14 @@ export function buildGmailAuthorizationUrl(state: string) {
     prompt: "consent select_account",
     redirect_uri: redirectUri,
     response_type: "code",
-    scope: [...GOOGLE_IDENTITY_SCOPES, GMAIL_READONLY_SCOPE].join(" "),
+    scope: [...GOOGLE_IDENTITY_SCOPES, ...getGoogleCapabilityScopes(capability)].join(" "),
     state,
   });
   return `https://accounts.google.com/o/oauth2/v2/auth?${parameters.toString()}`;
+}
+
+export function buildGmailAuthorizationUrl(state: string) {
+  return buildGoogleAuthorizationUrl(state, "gmail");
 }
 
 type GoogleTokenResponse = {

@@ -46,6 +46,7 @@ export default function TabLayout() {
             <Stack.Screen name="knowledge/reverse-questions" />
             <Stack.Screen name="profile" />
             <Stack.Screen name="integrations/google/callback" />
+            <Stack.Screen name="integrations/google/calendar/import" />
             <Stack.Screen name="import/gmail" />
           </Stack>
         </SensitiveReplayMask>

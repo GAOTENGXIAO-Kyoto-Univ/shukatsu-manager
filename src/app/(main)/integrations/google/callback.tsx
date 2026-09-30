@@ -1,15 +1,16 @@
 import { CheckCircle2, CircleAlert } from '@tamagui/lucide-icons-2';
 import { useAction } from 'convex/react';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Spinner, Text, YStack } from 'tamagui';
 
 import { api } from '../../../../../convex/_generated/api';
 import { AppButton } from '@/components/ui/AppButton';
+import { takeGoogleOAuthReturnPath } from '@/lib/googleOAuthFlow';
 
 export default function GoogleOAuthCallbackScreen() {
-  const { t } = useTranslation('gmail');
+  const { t } = useTranslation(['gmail', 'googleCalendar']);
   const router = useRouter();
   const params = useLocalSearchParams<{
     code?: string | string[];
@@ -20,6 +21,7 @@ export default function GoogleOAuthCallbackScreen() {
   const started = useRef(false);
   const [status, setStatus] = useState<'working' | 'success' | 'error'>('working');
   const [message, setMessage] = useState(t('callback.completing'));
+  const [returnPath, setReturnPath] = useState('/profile');
   const code = Array.isArray(params.code) ? params.code[0] : params.code;
   const state = Array.isArray(params.state) ? params.state[0] : params.state;
   const callbackError = Array.isArray(params.error) ? params.error[0] : params.error;
@@ -37,9 +39,14 @@ export default function GoogleOAuthCallbackScreen() {
     started.current = true;
 
     void completeAuthorization({ code, state })
-      .then(() => {
+      .then((result) => {
         setStatus('success');
-        setMessage(t('callback.success'));
+        setMessage(
+          result.capability === 'gmail'
+            ? t('gmail:callback.success')
+            : t('googleCalendar:callback.success'),
+        );
+        setReturnPath(takeGoogleOAuthReturnPath() ?? '/profile');
       })
       .catch(() => {
         setStatus('error');
@@ -69,8 +76,10 @@ export default function GoogleOAuthCallbackScreen() {
           {displayMessage}
         </Text>
         {displayStatus !== 'working' ? (
-          <AppButton variant="primary" onPress={() => router.replace('/profile')}>
-            {t('callback.back')}
+          <AppButton variant="primary" onPress={() => router.replace(returnPath as Href)}>
+            {returnPath === '/profile'
+              ? t('gmail:callback.back')
+              : t('googleCalendar:callback.continue')}
           </AppButton>
         ) : null}
       </YStack>

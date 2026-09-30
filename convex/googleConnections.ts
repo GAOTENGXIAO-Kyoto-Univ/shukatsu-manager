@@ -2,6 +2,13 @@ import { ConvexError, v } from "convex/values";
 
 import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { getCurrentUserOrThrow } from "./users";
+import { hasGoogleCapability } from "./lib/googleOAuth";
+
+const capabilityValidator = v.union(
+  v.literal("gmail"),
+  v.literal("calendar_read"),
+  v.literal("calendar_write"),
+);
 
 async function getUserByAuthId(
   ctx: Parameters<typeof getCurrentUserOrThrow>[0],
@@ -26,6 +33,9 @@ export const current = query({
     return {
       email: connection.email,
       gmailEnabled: connection.gmailEnabled,
+      calendarEnabled: connection.calendarEnabled ?? false,
+      hasCalendarReadScope: hasGoogleCapability(connection.grantedScopes, "calendar_read"),
+      hasCalendarWriteScope: hasGoogleCapability(connection.grantedScopes, "calendar_write"),
       grantedScopes: connection.grantedScopes,
       credentialStatus: connection.credentialStatus,
       updatedAt: connection.updatedAt,
@@ -38,6 +48,7 @@ export const createOAuthState = internalMutation({
     authUserId: v.string(),
     stateHash: v.string(),
     expiresAt: v.number(),
+    requestedCapability: capabilityValidator,
   },
   handler: async (ctx, args) => {
     const user = await getUserByAuthId(ctx, args.authUserId);
@@ -49,14 +60,14 @@ export const createOAuthState = internalMutation({
     await ctx.db.insert("googleOAuthStates", {
       userId: user._id,
       stateHash: args.stateHash,
-      requestedCapability: "gmail",
+      requestedCapability: args.requestedCapability,
       expiresAt: args.expiresAt,
       createdAt: Date.now(),
     });
   },
 });
 
-export const consumeOAuthState = internalMutation({
+export const inspectOAuthState = internalQuery({
   args: { authUserId: v.string(), stateHash: v.string() },
   handler: async (ctx, args) => {
     const user = await getUserByAuthId(ctx, args.authUserId);
@@ -65,14 +76,9 @@ export const consumeOAuthState = internalMutation({
       .withIndex("by_state_hash", (q) => q.eq("stateHash", args.stateHash))
       .unique();
     if (!state || state.userId !== user._id || state.expiresAt < Date.now()) {
-      if (state) await ctx.db.delete(state._id);
       throw new ConvexError({ code: "GOOGLE_OAUTH_STATE_INVALID" });
     }
-    await ctx.db.delete(state._id);
-    return { existingConnection: await ctx.db
-      .query("googleConnections")
-      .withIndex("by_user_id", (q) => q.eq("userId", user._id))
-      .unique() };
+    return { requestedCapability: state.requestedCapability };
   },
 });
 
@@ -85,9 +91,23 @@ export const saveAuthorization = internalMutation({
     refreshTokenCiphertext: v.optional(v.string()),
     refreshTokenIv: v.optional(v.string()),
     tokenKeyVersion: v.optional(v.string()),
+    requestedCapability: capabilityValidator,
+    stateHash: v.string(),
   },
   handler: async (ctx, args) => {
     const user = await getUserByAuthId(ctx, args.authUserId);
+    const state = await ctx.db
+      .query("googleOAuthStates")
+      .withIndex("by_state_hash", (q) => q.eq("stateHash", args.stateHash))
+      .unique();
+    if (
+      !state ||
+      state.userId !== user._id ||
+      state.expiresAt < Date.now() ||
+      state.requestedCapability !== args.requestedCapability
+    ) {
+      throw new ConvexError({ code: "GOOGLE_OAUTH_STATE_INVALID" });
+    }
     const connection = await ctx.db
       .query("googleConnections")
       .withIndex("by_user_id", (q) => q.eq("userId", user._id))
@@ -95,12 +115,21 @@ export const saveAuthorization = internalMutation({
     if (connection && connection.googleAccountId !== args.googleAccountId) {
       throw new ConvexError({ code: "GOOGLE_ACCOUNT_MISMATCH" });
     }
+    await ctx.db.delete(state._id);
     const now = Date.now();
     if (connection) {
       await ctx.db.patch(connection._id, {
         email: args.email,
         grantedScopes: args.grantedScopes,
-        gmailEnabled: true,
+        gmailEnabled:
+          args.requestedCapability === "gmail"
+            ? hasGoogleCapability(args.grantedScopes, "gmail")
+            : connection.gmailEnabled,
+        calendarEnabled:
+          args.requestedCapability === "calendar_read" ||
+          args.requestedCapability === "calendar_write"
+            ? hasGoogleCapability(args.grantedScopes, args.requestedCapability)
+            : (connection.calendarEnabled ?? false),
         credentialStatus: "active",
         ...(args.refreshTokenCiphertext
           ? {
@@ -121,7 +150,12 @@ export const saveAuthorization = internalMutation({
       googleAccountId: args.googleAccountId,
       email: args.email,
       grantedScopes: args.grantedScopes,
-      gmailEnabled: true,
+      gmailEnabled:
+        args.requestedCapability === "gmail" &&
+        hasGoogleCapability(args.grantedScopes, "gmail"),
+      calendarEnabled:
+        args.requestedCapability !== "gmail" &&
+        hasGoogleCapability(args.grantedScopes, args.requestedCapability),
       credentialStatus: "active",
       refreshTokenCiphertext: args.refreshTokenCiphertext,
       refreshTokenIv: args.refreshTokenIv,
@@ -177,6 +211,23 @@ export const disableGmail = mutation({
   },
 });
 
+export const disableCalendar = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUserOrThrow(ctx);
+    const connection = await ctx.db
+      .query("googleConnections")
+      .withIndex("by_user_id", (q) => q.eq("userId", user._id))
+      .unique();
+    if (connection) {
+      await ctx.db.patch(connection._id, {
+        calendarEnabled: false,
+        updatedAt: Date.now(),
+      });
+    }
+  },
+});
+
 export const disconnectGoogle = mutation({
   args: {},
   handler: async (ctx) => {
@@ -186,6 +237,11 @@ export const disconnectGoogle = mutation({
       .withIndex("by_user_id", (q) => q.eq("userId", user._id))
       .unique();
     if (connection) await ctx.db.delete(connection._id);
+    const links = await ctx.db
+      .query("googleCalendarEventLinks")
+      .withIndex("by_user_id", (q) => q.eq("userId", user._id))
+      .collect();
+    for (const link of links) await ctx.db.delete(link._id);
     const states = await ctx.db
       .query("googleOAuthStates")
       .withIndex("by_user_id", (q) => q.eq("userId", user._id))

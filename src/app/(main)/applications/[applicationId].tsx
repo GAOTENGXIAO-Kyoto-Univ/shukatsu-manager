@@ -22,6 +22,7 @@ import { formatEventDate, getEventLabel } from '@/components/events/eventFormatt
 import { useTimeBucket } from '@/hooks/useTimeBucket';
 import { SelectionStatusBadge } from '@/components/selection/SelectionStatusBadge';
 import { SelectionStepActions } from '@/components/selection/SelectionStepActions';
+import { GoogleCalendarExportOverlay } from '@/components/calendar/GoogleCalendarExportOverlay';
 import { canMoveStep, SelectionTimeline } from '@/components/selection/SelectionTimeline';
 import { getSelectionStepDisplayName, getStatusLabel } from '@/components/selection/selectionConstants';
 import { AppButton } from '@/components/ui/AppButton';
@@ -48,6 +49,7 @@ export default function ApplicationDetailScreen() {
   const timeBucket = useTimeBucket();
   const applicationId = readRouteParam(params.applicationId);
   const stepParam = readRouteParam(params.step);
+  const exportEventId = readRouteParam(params.googleCalendarExport) as Id<'events'> | undefined;
   const reorderSteps = useMutation(api.selectionSteps.reorder);
   const applicationState = useQuery({
     query: api.applications.get,
@@ -391,6 +393,19 @@ export default function ApplicationDetailScreen() {
           setDeleteTarget(null);
           router.replace('/companies' as Href);
         }}
+      />
+      <GoogleCalendarExportOverlay
+        eventId={exportEventId ?? null}
+        onClose={() =>
+          router.replace({
+            pathname: '/applications/[applicationId]',
+            params: {
+              applicationId,
+              ...(stepParam ? { step: stepParam } : {}),
+            },
+          } as Href)
+        }
+        open={Boolean(exportEventId)}
       />
       <AppToast message={toastMessage} />
     </PageFrame>

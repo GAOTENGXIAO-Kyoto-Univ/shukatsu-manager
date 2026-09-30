@@ -16,6 +16,32 @@ export function getJapanDayStartAfter(timestamp: number, days: number) {
   return getJapanDayStart(timestamp) + days * 24 * 60 * 60 * 1000;
 }
 
+export function formatJapanEventDate(timestamp: number) {
+  const shifted = new Date(timestamp + japanOffsetMilliseconds);
+  const year = shifted.getUTCFullYear();
+  const month = String(shifted.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(shifted.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function formatJapanEventTime(timestamp: number) {
+  const shifted = new Date(timestamp + japanOffsetMilliseconds);
+  return `${String(shifted.getUTCHours()).padStart(2, "0")}:${String(
+    shifted.getUTCMinutes(),
+  ).padStart(2, "0")}`;
+}
+
+export function addCalendarDays(date: string, days: number) {
+  const match = datePattern.exec(date.trim());
+  if (!match) throw new Error("日期格式不正确");
+  const next = new Date(
+    Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + days),
+  );
+  return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}-${String(
+    next.getUTCDate(),
+  ).padStart(2, "0")}`;
+}
+
 export function normalizeEventDateTime(
   timingType: EventTimingType,
   date: string,
