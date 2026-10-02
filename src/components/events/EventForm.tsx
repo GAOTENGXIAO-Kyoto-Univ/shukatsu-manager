@@ -1,8 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Clock3 } from '@tamagui/lucide-icons-2';
 import { useMutation } from 'convex/react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ScrollView } from 'react-native';
 import { Text, XStack, YStack } from 'tamagui';
 import { z } from 'zod';
 
@@ -26,6 +28,8 @@ const eventFormSchema = z
   .superRefine((values, ctx) => {
     if (values.timingType === 'scheduled' && !values.time) {
       ctx.addIssue({ code: 'custom', path: ['time'], message: 'TIME_REQUIRED' });
+    } else if (values.time && !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(values.time)) {
+      ctx.addIssue({ code: 'custom', path: ['time'], message: 'TIME_INVALID' });
     }
 
     if (values.meetingUrl.trim()) {
@@ -41,6 +45,36 @@ const eventFormSchema = z
 type EventFormValues = z.infer<typeof eventFormSchema>;
 
 const deadlineTypes: SelectionStepType[] = ['es', 'web_test'];
+const timeOptionHeight = 40;
+const timeOptionsViewportHeight = 224;
+const timeOptions = Array.from({ length: 96 }, (_, index) => {
+  const hour = Math.floor(index / 4);
+  const minute = (index % 4) * 15;
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+});
+
+function getClosestTimeOptionIndex(input: string) {
+  const normalized = input.trim();
+
+  if (!normalized) return null;
+
+  if (/^\d{1,2}$/.test(normalized)) {
+    const hour = Number(normalized);
+    return hour <= 23 ? hour * 4 : null;
+  }
+
+  const timeMatch = /^(\d{1,2}):(\d{0,2})$/.exec(normalized);
+
+  if (!timeMatch) return null;
+
+  const hour = Number(timeMatch[1]);
+  const minute = timeMatch[2] ? Number(timeMatch[2]) : 0;
+
+  if (hour > 23 || minute > 59) return null;
+
+  const closestIndex = Math.round((hour * 60 + minute) / 15);
+  return Math.min(closestIndex, timeOptions.length - 1);
+}
 
 export function EventForm({
   event,
@@ -135,16 +169,30 @@ export function EventForm({
           control={control}
           name="date"
           render={({ field }) => (
-            <AppInput type="date" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} />
+            <DateInput value={field.value} onBlur={field.onBlur} onChange={field.onChange} />
           )}
         />
       </Field>
-      <Field label={`${t('calendar:time')}${timingType === 'scheduled' ? ' *' : ''}`} error={errors.time ? t('calendar:validation.time') : undefined}>
+      <Field
+        label={`${t('calendar:time')}${timingType === 'scheduled' ? ' *' : ''}`}
+        error={
+          errors.time?.message === 'TIME_INVALID'
+            ? t('calendar:validation.timeFormat')
+            : errors.time
+              ? t('calendar:validation.time')
+              : undefined
+        }
+      >
         <Controller
           control={control}
           name="time"
           render={({ field }) => (
-            <AppInput type="time" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} />
+            <TimeInput
+              label={t('calendar:time')}
+              value={field.value}
+              onBlur={field.onBlur}
+              onChange={field.onChange}
+            />
           )}
         />
       </Field>
@@ -169,6 +217,176 @@ export function EventForm({
       <AppButton variant="primary" disabled={isSubmitting} onPress={handleSubmit(submit)}>
         {isSubmitting ? t('common:states.saving') : event ? t('common:actions.save') : t('common:actions.add')}
       </AppButton>
+    </YStack>
+  );
+}
+
+function DateInput({
+  onBlur,
+  onChange,
+  value,
+}: {
+  onBlur: () => void;
+  onChange: (value: string) => void;
+  value: string;
+}) {
+  return (
+    <AppInput
+      type="date"
+      value={value}
+      onBlur={onBlur}
+      onClick={(event) => {
+        event.currentTarget.focus();
+
+        try {
+          event.currentTarget.showPicker?.();
+        } catch {
+          // Focusing the native date input remains the fallback when showPicker is unavailable.
+        }
+      }}
+      onChangeText={onChange}
+    />
+  );
+}
+
+function TimeInput({
+  label,
+  onBlur,
+  onChange,
+  value,
+}: {
+  label: string;
+  onBlur: () => void;
+  onChange: (value: string) => void;
+  value: string;
+}) {
+  const inputId = useId();
+  const optionsScrollRef = useRef<ScrollView | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const targetIndex = getClosestTimeOptionIndex(value);
+
+    if (targetIndex === null) return undefined;
+
+    const scrollTimer = setTimeout(() => {
+      const centeredOffset =
+        targetIndex * timeOptionHeight -
+        (timeOptionsViewportHeight - timeOptionHeight) / 2;
+      const maximumOffset =
+        timeOptions.length * timeOptionHeight - timeOptionsViewportHeight;
+
+      optionsScrollRef.current?.scrollTo({
+        animated: false,
+        y: Math.max(0, Math.min(centeredOffset, maximumOffset)),
+      });
+    }, 0);
+
+    return () => clearTimeout(scrollTimer);
+  }, [open, value]);
+
+  function openOptions() {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    setOpen(true);
+  }
+
+  function handleBlur() {
+    onBlur();
+    closeTimerRef.current = setTimeout(() => setOpen(false), 120);
+  }
+
+  function focusInput() {
+    if (typeof document !== 'undefined') {
+      document.getElementById(inputId)?.focus();
+    }
+    openOptions();
+  }
+
+  function selectTime(time: string) {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    onChange(time);
+    setOpen(false);
+  }
+
+  return (
+    <YStack gap="$xs">
+      <XStack position="relative">
+        <AppInput
+          id={inputId}
+          aria-autocomplete="list"
+          aria-expanded={open}
+          autoCapitalize="none"
+          autoCorrect={false}
+          maxLength={5}
+          placeholder="--:--"
+          pr={48}
+          type="text"
+          value={value}
+          width="100%"
+          onBlur={handleBlur}
+          onChangeText={onChange}
+          onFocus={openOptions}
+          onPressIn={openOptions}
+        />
+        <YStack
+          aria-label={label}
+          cursor="pointer"
+          style={{
+            alignItems: 'center',
+            bottom: 0,
+            justifyContent: 'center',
+            position: 'absolute',
+            right: 0,
+            top: 0,
+            width: 48,
+          }}
+          onPress={focusInput}
+        >
+          <Clock3 color="$textMuted" size={18} />
+        </YStack>
+      </XStack>
+
+      {open ? (
+        <YStack
+          bg="$surface"
+          borderColor="$border"
+          style={{
+            borderRadius: 12,
+            borderWidth: 1,
+            maxHeight: timeOptionsViewportHeight,
+            overflow: 'hidden',
+          }}
+        >
+          <ScrollView
+            ref={optionsScrollRef}
+            keyboardShouldPersistTaps="always"
+            nestedScrollEnabled
+            showsVerticalScrollIndicator
+            style={{ maxHeight: timeOptionsViewportHeight }}
+          >
+            {timeOptions.map((time) => (
+              <XStack
+                key={time}
+                bg={value === time ? '$accentSoft' : '$surface'}
+                cursor="pointer"
+                px="$md"
+                pressStyle={{ opacity: 0.72 }}
+                style={{ alignItems: 'center', height: timeOptionHeight }}
+                onPress={() => selectTime(time)}
+              >
+                <Text color="$text">{time}</Text>
+              </XStack>
+            ))}
+          </ScrollView>
+        </YStack>
+      ) : null}
     </YStack>
   );
 }

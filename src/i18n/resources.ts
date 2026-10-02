@@ -174,7 +174,7 @@ const zhCN = {
     deleteDescription: '将删除「{{title}}」。此操作无法撤销。', confirmDelete: '确认删除',
     application: '应聘记录', applicationsLoading: '正在读取应聘记录...', applicationsLoadFailed: '应聘记录读取失败，请稍后重试',
     noApplications: '暂无可选的应聘记录', noSteps: '该应聘记录尚无选考步骤', noAvailableSteps: '该应聘记录暂无可添加日程的选考步骤', hasEvent: '已有时间事项',
-    validation: { date: '请选择日期', title: '标题不能为空', application: '请选择应聘记录', step: '请选择选考步骤', time: '预定时间必须填写时间', url: '请输入有效的 http/https 链接' },
+    validation: { date: '请选择日期', title: '标题不能为空', application: '请选择应聘记录', step: '请选择选考步骤', time: '预定时间必须填写时间', timeFormat: '请输入 00:00～23:59 范围内的 HH:mm 时间', url: '请输入有效的 http/https 链接' },
   },
   interview: {
     missing: '面试记录不存在', loading: '正在加载面试记录...', notInterview: '该选考步骤不是面试类型', back: '返回应聘详情', time: '时间',
@@ -451,7 +451,7 @@ const jaJP = {
     deleteDescription: '「{{title}}」を削除します。この操作は取り消せません。', confirmDelete: '削除する',
     application: '応募', applicationsLoading: '応募を読み込んでいます...', applicationsLoadFailed: '応募を読み込めませんでした',
     noApplications: '選択できる応募はありません', noSteps: 'この応募には選考ステップがありません', noAvailableSteps: '日程を追加できる選考ステップはありません', hasEvent: '日程設定済み',
-    validation: { date: '日付を選択してください', title: 'タイトルを入力してください', application: '応募を選択してください', step: '選考ステップを選択してください', time: '予定時刻を入力してください', url: '有効な http/https URL を入力してください' },
+    validation: { date: '日付を選択してください', title: 'タイトルを入力してください', application: '応募を選択してください', step: '選考ステップを選択してください', time: '予定時刻を入力してください', timeFormat: '00:00～23:59 の範囲で HH:mm 形式の時刻を入力してください', url: '有効な http/https URL を入力してください' },
   },
   interview: {
     missing: '面接記録が見つかりません', loading: '面接記録を読み込んでいます...', notInterview: 'この選考ステップは面接ではありません', back: '応募詳細へ戻る', time: '日時',
@@ -728,7 +728,7 @@ const enUS = {
     deleteDescription: '“{{title}}” will be deleted. This cannot be undone.', confirmDelete: 'Delete',
     application: 'Application', applicationsLoading: 'Loading applications...', applicationsLoadFailed: 'Could not load applications',
     noApplications: 'No applications available', noSteps: 'This application has no selection steps', noAvailableSteps: 'No selection steps are available for scheduling', hasEvent: 'Already scheduled',
-    validation: { date: 'Select a date', title: 'Enter a title', application: 'Select an application', step: 'Select a selection step', time: 'Enter a scheduled time', url: 'Enter a valid http/https URL' },
+    validation: { date: 'Select a date', title: 'Enter a title', application: 'Select an application', step: 'Select a selection step', time: 'Enter a scheduled time', timeFormat: 'Enter a time from 00:00 to 23:59 in HH:mm format', url: 'Enter a valid http/https URL' },
   },
   interview: {
     missing: 'Interview record not found', loading: 'Loading interview record...', notInterview: 'This selection step is not an interview', back: 'Back to application', time: 'Time',
