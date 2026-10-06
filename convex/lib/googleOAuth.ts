@@ -2,7 +2,7 @@ const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 
 declare const process: { env: Record<string, string | undefined> };
 
-export const GMAIL_READONLY_SCOPE =
+export const LEGACY_GMAIL_READONLY_SCOPE =
   "https://www.googleapis.com/auth/gmail.readonly";
 export const GOOGLE_CALENDAR_LIST_READONLY_SCOPE =
   "https://www.googleapis.com/auth/calendar.calendarlist.readonly";
@@ -11,10 +11,10 @@ export const GOOGLE_CALENDAR_EVENTS_READONLY_SCOPE =
 export const GOOGLE_CALENDAR_EVENTS_SCOPE =
   "https://www.googleapis.com/auth/calendar.events";
 export const GOOGLE_IDENTITY_SCOPES = ["openid", "email"] as const;
-export type GoogleOAuthCapability = "gmail" | "calendar_read" | "calendar_write";
+export type GoogleOAuthCapability = "calendar_read" | "calendar_write";
+export type StoredGoogleOAuthCapability = GoogleOAuthCapability | "gmail";
 
 export function getGoogleCapabilityScopes(capability: GoogleOAuthCapability) {
-  if (capability === "gmail") return [GMAIL_READONLY_SCOPE];
   if (capability === "calendar_read") {
     return [GOOGLE_CALENDAR_LIST_READONLY_SCOPE, GOOGLE_CALENDAR_EVENTS_READONLY_SCOPE];
   }
@@ -34,6 +34,10 @@ export function hasGoogleCapability(
     );
   }
   return getGoogleCapabilityScopes(capability).every((scope) => scopeSet.has(scope));
+}
+
+export function hasLegacyGmailScope(scopes: readonly string[]) {
+  return scopes.includes(LEGACY_GMAIL_READONLY_SCOPE);
 }
 
 export class GoogleIntegrationError extends Error {
@@ -143,7 +147,6 @@ export function buildGoogleAuthorizationUrl(
   const parameters = new URLSearchParams({
     access_type: "offline",
     client_id: clientId,
-    include_granted_scopes: "true",
     prompt: "consent select_account",
     redirect_uri: redirectUri,
     response_type: "code",
@@ -151,10 +154,6 @@ export function buildGoogleAuthorizationUrl(
     state,
   });
   return `https://accounts.google.com/o/oauth2/v2/auth?${parameters.toString()}`;
-}
-
-export function buildGmailAuthorizationUrl(state: string) {
-  return buildGoogleAuthorizationUrl(state, "gmail");
 }
 
 type GoogleTokenResponse = {

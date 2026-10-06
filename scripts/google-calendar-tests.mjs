@@ -12,11 +12,14 @@ import {
   GOOGLE_CALENDAR_EVENTS_READONLY_SCOPE,
   GOOGLE_CALENDAR_EVENTS_SCOPE,
   GOOGLE_CALENDAR_LIST_READONLY_SCOPE,
+  GOOGLE_IDENTITY_SCOPES,
+  LEGACY_GMAIL_READONLY_SCOPE,
   hasGoogleCapability,
+  hasLegacyGmailScope,
 } from '../convex/lib/googleOAuth.ts';
 import { translationResources } from '../src/i18n/resources.ts';
 
-test('Calendar OAuth uses the narrow incremental read and write scopes', () => {
+test('Calendar OAuth requests only identity and narrow Calendar scopes', () => {
   process.env.GOOGLE_OAUTH_CLIENT_ID = 'client-id';
   process.env.GOOGLE_OAUTH_CLIENT_SECRET = 'client-secret';
   process.env.GOOGLE_OAUTH_REDIRECT_URI = 'https://example.com/integrations/google/callback';
@@ -24,12 +27,21 @@ test('Calendar OAuth uses the narrow incremental read and write scopes', () => {
   const writeUrl = new URL(buildGoogleAuthorizationUrl('state', 'calendar_write'));
   const readScopes = readUrl.searchParams.get('scope')?.split(' ') ?? [];
   const writeScopes = writeUrl.searchParams.get('scope')?.split(' ') ?? [];
+  for (const identityScope of GOOGLE_IDENTITY_SCOPES) {
+    assert.ok(readScopes.includes(identityScope));
+    assert.ok(writeScopes.includes(identityScope));
+  }
   assert.ok(readScopes.includes(GOOGLE_CALENDAR_LIST_READONLY_SCOPE));
   assert.ok(readScopes.includes(GOOGLE_CALENDAR_EVENTS_READONLY_SCOPE));
   assert.ok(!readScopes.includes(GOOGLE_CALENDAR_EVENTS_SCOPE));
   assert.ok(writeScopes.includes(GOOGLE_CALENDAR_LIST_READONLY_SCOPE));
   assert.ok(writeScopes.includes(GOOGLE_CALENDAR_EVENTS_SCOPE));
-  assert.equal(writeUrl.searchParams.get('include_granted_scopes'), 'true');
+  assert.ok(!readScopes.includes(LEGACY_GMAIL_READONLY_SCOPE));
+  assert.ok(!writeScopes.includes(LEGACY_GMAIL_READONLY_SCOPE));
+  assert.equal(readUrl.searchParams.get('include_granted_scopes'), null);
+  assert.equal(writeUrl.searchParams.get('include_granted_scopes'), null);
+  assert.equal(hasLegacyGmailScope([LEGACY_GMAIL_READONLY_SCOPE]), true);
+  assert.equal(hasLegacyGmailScope(writeScopes), false);
   assert.equal(hasGoogleCapability(writeScopes, 'calendar_read'), true);
   assert.equal(hasGoogleCapability(readScopes, 'calendar_write'), false);
 });
@@ -93,6 +105,7 @@ test('Google Calendar UI copy exists in all three locales', () => {
   for (const locale of ['zh-CN', 'ja-JP', 'en-US']) {
     const calendar = translationResources[locale].googleCalendar;
     assert.ok(calendar.profile.connect);
+    assert.ok(calendar.profile.legacyAuthorization);
     assert.ok(calendar.actions.authorizeWrite);
     assert.ok(calendar.conflict.overwrite);
     assert.ok(calendar.export.allDayHint);

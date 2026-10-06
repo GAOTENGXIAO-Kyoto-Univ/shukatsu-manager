@@ -9,7 +9,9 @@ import {
   exchangeAuthorizationCode,
   getGoogleAccountIdentity,
   hasGoogleCapability,
+  hasLegacyGmailScope,
   type GoogleOAuthCapability,
+  type StoredGoogleOAuthCapability,
   GoogleIntegrationError,
   hashOAuthState,
 } from "./lib/googleOAuth";
@@ -26,25 +28,6 @@ function rethrowGoogleError(error: unknown): never {
   }
   throw new ConvexError({ code: "GOOGLE_CONNECTION_FAILED" });
 }
-
-export const beginGmailAuthorization = action({
-  args: {},
-  handler: async (ctx) => {
-    try {
-      const authUserId = await requireAuthUserId(ctx);
-      const state = createOAuthState();
-      await ctx.runMutation(internal.googleConnections.createOAuthState, {
-        authUserId,
-        stateHash: await hashOAuthState(state),
-        expiresAt: Date.now() + 10 * 60 * 1000,
-        requestedCapability: "gmail",
-      });
-      return { authorizationUrl: buildGoogleAuthorizationUrl(state, "gmail") };
-    } catch (error) {
-      return rethrowGoogleError(error);
-    }
-  },
-});
 
 export const beginCalendarAuthorization = action({
   args: { access: v.union(v.literal("read"), v.literal("write")) },
@@ -69,7 +52,7 @@ export const beginCalendarAuthorization = action({
   },
 });
 
-export const completeGmailAuthorization = action({
+export const completeCalendarAuthorization = action({
   args: { code: v.string(), state: v.string() },
   handler: async (ctx, args): Promise<{
     connected: true;
@@ -82,21 +65,26 @@ export const completeGmailAuthorization = action({
       }
       const authUserId = await requireAuthUserId(ctx);
       const stateHash = await hashOAuthState(args.state);
-      const oauthState: { requestedCapability: GoogleOAuthCapability } = await ctx.runQuery(internal.googleConnections.inspectOAuthState, {
+      const oauthState: { requestedCapability: StoredGoogleOAuthCapability } = await ctx.runQuery(internal.googleConnections.inspectOAuthState, {
         authUserId,
         stateHash,
       });
+      if (oauthState.requestedCapability === "gmail") {
+        throw new ConvexError({ code: "GOOGLE_OAUTH_STATE_INVALID" });
+      }
+      const requestedCapability: GoogleOAuthCapability = oauthState.requestedCapability;
       const tokens = await exchangeAuthorizationCode(args.code);
       const identity = await getGoogleAccountIdentity(tokens.access_token!);
       const grantedScopes = Array.from(
         new Set((tokens.scope ?? "").split(/\s+/u).filter(Boolean)),
       );
-      if (!hasGoogleCapability(grantedScopes, oauthState.requestedCapability)) {
-        const code = oauthState.requestedCapability === "gmail"
-          ? "GOOGLE_GMAIL_SCOPE_MISSING"
-          : oauthState.requestedCapability === "calendar_write"
-            ? "GOOGLE_CALENDAR_WRITE_SCOPE_MISSING"
-            : "GOOGLE_CALENDAR_READ_SCOPE_MISSING";
+      if (hasLegacyGmailScope(grantedScopes)) {
+        throw new ConvexError({ code: "GOOGLE_LEGACY_GMAIL_SCOPE_PRESENT" });
+      }
+      if (!hasGoogleCapability(grantedScopes, requestedCapability)) {
+        const code = requestedCapability === "calendar_write"
+          ? "GOOGLE_CALENDAR_WRITE_SCOPE_MISSING"
+          : "GOOGLE_CALENDAR_READ_SCOPE_MISSING";
         throw new ConvexError({ code });
       }
       const encrypted = tokens.refresh_token
@@ -107,7 +95,7 @@ export const completeGmailAuthorization = action({
         googleAccountId: identity.googleAccountId,
         email: identity.email,
         grantedScopes,
-        requestedCapability: oauthState.requestedCapability,
+        requestedCapability,
         stateHash,
         ...(encrypted
           ? {
@@ -120,7 +108,7 @@ export const completeGmailAuthorization = action({
       return {
         connected: true as const,
         email: identity.email,
-        capability: oauthState.requestedCapability,
+        capability: requestedCapability,
       };
     } catch (error) {
       return rethrowGoogleError(error);

@@ -32,6 +32,7 @@ import {
   decryptRefreshToken,
   GoogleIntegrationError,
   hasGoogleCapability,
+  hasLegacyGmailScope,
   refreshGoogleAccessToken,
 } from "./lib/googleOAuth";
 import { getCurrentUserOrThrow } from "./users";
@@ -58,6 +59,9 @@ async function getCalendarAccessToken(
   });
   if (!connection || !(connection.calendarEnabled ?? false)) {
     throw new ConvexError({ code: "GOOGLE_CALENDAR_NOT_CONNECTED" });
+  }
+  if (hasLegacyGmailScope(connection.grantedScopes)) {
+    throw new ConvexError({ code: "GOOGLE_LEGACY_GMAIL_SCOPE_PRESENT" });
   }
   if (connection.credentialStatus !== "active") {
     throw new ConvexError({ code: "GOOGLE_REAUTH_REQUIRED" });
@@ -305,6 +309,7 @@ export const finalizeImport = mutation({
     if (
       !connection ||
       !(connection.calendarEnabled ?? false) ||
+      hasLegacyGmailScope(connection.grantedScopes) ||
       !hasGoogleCapability(connection.grantedScopes, "calendar_read")
     ) {
       throw new ConvexError({ code: "GOOGLE_CALENDAR_NOT_CONNECTED" });
@@ -380,16 +385,21 @@ export const getExportCandidate = query({
       .withIndex("by_user_id", (q) => q.eq("userId", user._id))
       .unique();
     const link = await getGoogleCalendarLinkByEvent(ctx, source.event._id);
+    const calendarOnlyConnection = connection
+      ? !hasLegacyGmailScope(connection.grantedScopes)
+      : false;
     return {
       ...toGoogleCalendarExportCandidate(source),
       linked: Boolean(link),
       calendarEnabled: connection?.calendarEnabled ?? false,
       credentialStatus: connection?.credentialStatus ?? null,
       hasCalendarReadScope: connection
-        ? hasGoogleCapability(connection.grantedScopes, "calendar_read")
+        ? calendarOnlyConnection &&
+          hasGoogleCapability(connection.grantedScopes, "calendar_read")
         : false,
       hasCalendarWriteScope: connection
-        ? hasGoogleCapability(connection.grantedScopes, "calendar_write")
+        ? calendarOnlyConnection &&
+          hasGoogleCapability(connection.grantedScopes, "calendar_write")
         : false,
     };
   },

@@ -1,73 +1,47 @@
-import { CalendarDays, Mail, Unplug } from '@tamagui/lucide-icons-2';
+import { CalendarDays, ExternalLink, Unplug } from '@tamagui/lucide-icons-2';
 import { useAction, useMutation, useQuery_experimental as useQuery } from 'convex/react';
-import { useRouter } from 'expo-router';
-import type { Href } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Linking } from 'react-native';
 import { Spinner, Text, XStack, YStack } from 'tamagui';
 
 import { api } from '../../../convex/_generated/api';
 import { AppButton } from '@/components/ui/AppButton';
 import { startGoogleOAuth } from '@/lib/googleOAuthFlow';
 
+const googleAccountConnectionsUrl = 'https://myaccount.google.com/connections';
+
 export function GoogleIntegrationSection() {
-  const { t } = useTranslation(['gmail', 'googleCalendar']);
+  const { t } = useTranslation('googleCalendar');
   const router = useRouter();
   const connection = useQuery({ query: api.googleConnections.current, args: {} });
-  const beginAuthorization = useAction(api.googleOAuth.beginGmailAuthorization);
-  const beginCalendarAuthorization = useAction(api.googleOAuth.beginCalendarAuthorization);
-  const disableGmail = useMutation(api.googleConnections.disableGmail);
+  const beginAuthorization = useAction(api.googleOAuth.beginCalendarAuthorization);
   const disableCalendar = useMutation(api.googleConnections.disableCalendar);
   const disconnectGoogle = useMutation(api.googleConnections.disconnectGoogle);
-  const [busyAction, setBusyAction] = useState<'connect' | 'connect-calendar' | 'disable' | 'disable-calendar' | 'disconnect' | null>(null);
+  const [busyAction, setBusyAction] = useState<'connect' | 'disable' | 'disconnect' | null>(null);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function connect() {
+  async function connectCalendar() {
     if (busyAction) return;
     setBusyAction('connect');
     setError(null);
     try {
-      const result = await beginAuthorization({});
-      startGoogleOAuth(result.authorizationUrl, '/profile');
+      const result = await beginAuthorization({ access: 'read' });
+      startGoogleOAuth(result.authorizationUrl, '/integrations/google/calendar/import');
     } catch {
       setError(t('errors.connection'));
       setBusyAction(null);
     }
   }
 
-  async function connectCalendar() {
-    if (busyAction) return;
-    setBusyAction('connect-calendar');
-    setError(null);
-    try {
-      const result = await beginCalendarAuthorization({ access: 'read' });
-      startGoogleOAuth(result.authorizationUrl, '/integrations/google/calendar/import');
-    } catch {
-      setError(t('googleCalendar:errors.connection'));
-      setBusyAction(null);
-    }
-  }
-
   async function disableCalendarAccess() {
-    if (busyAction) return;
-    setBusyAction('disable-calendar');
-    setError(null);
-    try {
-      await disableCalendar({});
-    } catch {
-      setError(t('gmail:errors.operation'));
-    } finally {
-      setBusyAction(null);
-    }
-  }
-
-  async function disable() {
     if (busyAction) return;
     setBusyAction('disable');
     setError(null);
     try {
-      await disableGmail({});
+      await disableCalendar({});
     } catch {
       setError(t('errors.operation'));
     } finally {
@@ -113,7 +87,7 @@ export function GoogleIntegrationSection() {
             width={42}
             style={{ alignItems: 'center', borderRadius: 9999, justifyContent: 'center' }}
           >
-            <Mail color="$accentStrong" size={21} />
+            <CalendarDays color="$accentStrong" size={21} />
           </YStack>
           <YStack flex={1} gap="$xs">
             <Text color="$text" fontSize={15} fontWeight="600">
@@ -136,32 +110,69 @@ export function GoogleIntegrationSection() {
 
         {connection.status === 'success' && connection.data ? (
           <YStack gap="$sm">
-            {connection.data.credentialStatus === 'reauth_required' ? (
+            {connection.data.hasLegacyGmailScope ? (
+              <Text color="$danger" fontSize={13} lineHeight={20}>
+                {t('profile.legacyAuthorization')}
+              </Text>
+            ) : connection.data.credentialStatus === 'reauth_required' ? (
               <Text color="$danger" fontSize={13}>{t('profile.reauthRequired')}</Text>
-            ) : !connection.data.gmailEnabled ? (
-              <Text color="$textSecondary" fontSize={13}>{t('profile.disabled')}</Text>
-            ) : (
+            ) : connection.data.calendarEnabled ? (
               <Text color="$success" fontSize={13}>{t('profile.connected')}</Text>
+            ) : (
+              <Text color="$textSecondary" fontSize={13}>{t('profile.disabled')}</Text>
             )}
+
             <XStack flexWrap="wrap" gap="$sm">
-              {connection.data.gmailEnabled && connection.data.credentialStatus === 'active' ? (
+              {connection.data.hasLegacyGmailScope ? (
                 <>
-                  <AppButton variant="primary" onPress={() => router.push('/import/gmail' as Href)}>
+                  <AppButton
+                    icon={<ExternalLink size={16} />}
+                    onPress={() => void Linking.openURL(googleAccountConnectionsUrl)}
+                  >
+                    {t('profile.revokeLegacy')}
+                  </AppButton>
+                  <AppButton
+                    disabled={Boolean(busyAction)}
+                    variant="primary"
+                    onPress={() => void connectCalendar()}
+                  >
+                    {busyAction === 'connect'
+                      ? t('profile.connecting')
+                      : t('profile.reconnectCalendar')}
+                  </AppButton>
+                </>
+              ) : connection.data.calendarEnabled &&
+                connection.data.credentialStatus === 'active' ? (
+                <>
+                  <AppButton
+                    variant="primary"
+                    onPress={() =>
+                      router.push('/integrations/google/calendar/import' as Href)
+                    }
+                  >
                     {t('profile.import')}
                   </AppButton>
-                  <AppButton disabled={Boolean(busyAction)} onPress={() => void disable()}>
-                    {busyAction === 'disable' ? t('profile.disabling') : t('profile.disable')}
+                  <AppButton
+                    disabled={Boolean(busyAction)}
+                    onPress={() => void disableCalendarAccess()}
+                  >
+                    {busyAction === 'disable'
+                      ? t('profile.disabling')
+                      : t('profile.disable')}
                   </AppButton>
                 </>
               ) : (
                 <AppButton
                   disabled={Boolean(busyAction)}
                   variant="primary"
-                  onPress={() => void connect()}
+                  onPress={() => void connectCalendar()}
                 >
-                  {busyAction === 'connect' ? t('profile.connecting') : t('profile.connect')}
+                  {busyAction === 'connect'
+                    ? t('profile.connecting')
+                    : t('profile.connect')}
                 </AppButton>
               )}
+
               <AppButton
                 disabled={Boolean(busyAction)}
                 icon={<Unplug size={16} />}
@@ -180,76 +191,15 @@ export function GoogleIntegrationSection() {
                 </AppButton>
               ) : null}
             </XStack>
-
-            <YStack borderTopColor="$border" borderTopWidth={1} gap="$sm" pt="$base">
-              <XStack gap="$sm" style={{ alignItems: 'center' }}>
-                <CalendarDays color="$accentStrong" size={19} />
-                <Text color="$text" fontSize={15} fontWeight="600">
-                  {t('googleCalendar:profile.title')}
-                </Text>
-              </XStack>
-              <Text
-                color={
-                  connection.data.calendarEnabled &&
-                  connection.data.credentialStatus === 'active'
-                    ? '$success'
-                    : '$textSecondary'
-                }
-                fontSize={13}
-              >
-                {connection.data.calendarEnabled
-                  ? t('googleCalendar:profile.connected')
-                  : t('googleCalendar:profile.disabled')}
-              </Text>
-              <XStack flexWrap="wrap" gap="$sm">
-                {connection.data.calendarEnabled &&
-                connection.data.credentialStatus === 'active' ? (
-                  <>
-                    <AppButton
-                      variant="primary"
-                      onPress={() =>
-                        router.push('/integrations/google/calendar/import' as Href)
-                      }
-                    >
-                      {t('googleCalendar:profile.import')}
-                    </AppButton>
-                    <AppButton
-                      disabled={Boolean(busyAction)}
-                      onPress={() => void disableCalendarAccess()}
-                    >
-                      {busyAction === 'disable-calendar'
-                        ? t('googleCalendar:profile.disabling')
-                        : t('googleCalendar:profile.disable')}
-                    </AppButton>
-                  </>
-                ) : (
-                  <AppButton
-                    disabled={Boolean(busyAction)}
-                    variant="primary"
-                    onPress={() => void connectCalendar()}
-                  >
-                    {busyAction === 'connect-calendar'
-                      ? t('googleCalendar:profile.connecting')
-                      : t('googleCalendar:profile.connect')}
-                  </AppButton>
-                )}
-              </XStack>
-              <Text color="$textMuted" fontSize={12} lineHeight={18}>
-                {t('googleCalendar:profile.privacy')}
-              </Text>
-            </YStack>
           </YStack>
         ) : connection.status === 'success' ? (
-          <XStack flexWrap="wrap" gap="$sm">
-            <AppButton disabled={Boolean(busyAction)} variant="primary" onPress={() => void connect()}>
-              {busyAction === 'connect' ? t('gmail:profile.connecting') : t('gmail:profile.connect')}
-            </AppButton>
-            <AppButton disabled={Boolean(busyAction)} variant="secondary" onPress={() => void connectCalendar()}>
-              {busyAction === 'connect-calendar'
-                ? t('googleCalendar:profile.connecting')
-                : t('googleCalendar:profile.connect')}
-            </AppButton>
-          </XStack>
+          <AppButton
+            disabled={Boolean(busyAction)}
+            variant="primary"
+            onPress={() => void connectCalendar()}
+          >
+            {busyAction === 'connect' ? t('profile.connecting') : t('profile.connect')}
+          </AppButton>
         ) : null}
 
         <Text color="$textMuted" fontSize={12} lineHeight={18}>

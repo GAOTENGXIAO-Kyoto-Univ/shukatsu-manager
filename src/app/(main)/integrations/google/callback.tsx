@@ -10,14 +10,14 @@ import { AppButton } from '@/components/ui/AppButton';
 import { takeGoogleOAuthReturnPath } from '@/lib/googleOAuthFlow';
 
 export default function GoogleOAuthCallbackScreen() {
-  const { t } = useTranslation(['gmail', 'googleCalendar']);
+  const { t } = useTranslation('googleCalendar');
   const router = useRouter();
   const params = useLocalSearchParams<{
     code?: string | string[];
     state?: string | string[];
     error?: string | string[];
   }>();
-  const completeAuthorization = useAction(api.googleOAuth.completeGmailAuthorization);
+  const completeAuthorization = useAction(api.googleOAuth.completeCalendarAuthorization);
   const started = useRef(false);
   const [status, setStatus] = useState<'working' | 'success' | 'error'>('working');
   const [message, setMessage] = useState(t('callback.completing'));
@@ -39,13 +39,9 @@ export default function GoogleOAuthCallbackScreen() {
     started.current = true;
 
     void completeAuthorization({ code, state })
-      .then((result) => {
+      .then(() => {
         setStatus('success');
-        setMessage(
-          result.capability === 'gmail'
-            ? t('gmail:callback.success')
-            : t('googleCalendar:callback.success'),
-        );
+        setMessage(t('callback.success'));
         setReturnPath(takeGoogleOAuthReturnPath() ?? '/profile');
       })
       .catch(() => {
@@ -77,9 +73,7 @@ export default function GoogleOAuthCallbackScreen() {
         </Text>
         {displayStatus !== 'working' ? (
           <AppButton variant="primary" onPress={() => router.replace(returnPath as Href)}>
-            {returnPath === '/profile'
-              ? t('gmail:callback.back')
-              : t('googleCalendar:callback.continue')}
+            {returnPath === '/profile' ? t('callback.back') : t('callback.continue')}
           </AppButton>
         ) : null}
       </YStack>

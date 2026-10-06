@@ -54,7 +54,7 @@ export function PublicLegalPage({ title, description, sections }: PublicLegalPag
                 {title}
               </Text>
               <Text color="$textMuted" fontSize={13}>
-                Last updated: 2026-09-28
+                Last updated: 2026-10-04
               </Text>
               <Text color="$textSecondary" fontSize={isDesktop ? 16 : 15} lineHeight={26}>
                 {description}

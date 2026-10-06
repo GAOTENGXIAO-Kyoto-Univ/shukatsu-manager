@@ -25,17 +25,17 @@ const termsSections: readonly LegalSection[] = [
     ],
   },
   {
-    title: '4. Google and Gmail integration',
+    title: '4. Google Calendar integration',
     paragraphs: [
-      'The Google and Gmail integration is an optional feature that you activate through your own explicit authorization. You may use the rest of the Service without connecting Gmail. The integration requests read-only Gmail access and is designed to search, preview, parse, and import messages only when you initiate those actions.',
-      'You represent that you have the right to access, import, process, and use the email content you select. You must not use the integration to access or process another person’s account or content without authorization. You may disable or disconnect the integration at any time.',
+      'The Google Calendar integration is an optional feature that you activate through your own explicit authorization. You may use the rest of the Service without connecting Google Calendar. The integration is designed to read Calendar data or create a Calendar event only when you initiate and confirm the relevant action.',
+      'You represent that you have the right to access, import, create, process, and use the Calendar event content you select. You must not use the integration to access or process another person’s account or content without authorization. You may disable or disconnect the integration at any time.',
     ],
   },
   {
     title: '5. User content and data accuracy',
     paragraphs: [
       'You retain responsibility for the content and job-search data you enter or import. You grant us the limited permission necessary to host, process, transmit, and display that content solely to operate and improve the Service.',
-      'Automated extraction and parsing may be incomplete or incorrect. We do not guarantee that every email can be parsed or that suggested companies, roles, dates, selection results, or other fields are accurate. You must review and confirm imported information and remain responsible for verifying deadlines, interview times, application requirements, and other job-search data with the original source.',
+      'Imported or exported Calendar event fields and mappings may be incomplete or incorrect. You must review and confirm the information and remain responsible for verifying deadlines, interview times, locations, and other job-search data with the original source.',
     ],
   },
   {
@@ -46,7 +46,7 @@ const termsSections: readonly LegalSection[] = [
       'Attempt to bypass security, authentication, usage limits, or access controls.',
       'Interfere with, disrupt, reverse engineer, scrape, or overload the Service except where such restrictions are prohibited by applicable law.',
       'Upload, import, or distribute malicious code or content that infringes another person’s rights.',
-      'Use Google or Gmail data in violation of Google’s terms or applicable law.',
+      'Use Google or Google Calendar data in violation of Google’s terms or applicable law.',
     ],
   },
   {
@@ -104,7 +104,7 @@ export default function TermsOfServiceRoute() {
     <>
       <Stack.Screen options={{ title: 'Terms of Service | Shukatsu Manager' }} />
       <PublicLegalPage
-        description="These Terms of Service govern your access to and use of Shukatsu Manager, including its optional Google and Gmail integration."
+        description="These Terms of Service govern your access to and use of Shukatsu Manager, including its optional Google Calendar integration."
         sections={termsSections}
         title="Terms of Service"
       />

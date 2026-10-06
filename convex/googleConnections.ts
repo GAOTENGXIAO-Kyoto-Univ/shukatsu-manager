@@ -2,7 +2,7 @@ import { ConvexError, v } from "convex/values";
 
 import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { getCurrentUserOrThrow } from "./users";
-import { hasGoogleCapability } from "./lib/googleOAuth";
+import { hasGoogleCapability, hasLegacyGmailScope } from "./lib/googleOAuth";
 
 const capabilityValidator = v.union(
   v.literal("gmail"),
@@ -30,14 +30,20 @@ export const current = query({
       .withIndex("by_user_id", (q) => q.eq("userId", user._id))
       .unique();
     if (!connection) return null;
+    const legacyGmailScopePresent = hasLegacyGmailScope(connection.grantedScopes);
     return {
       email: connection.email,
-      gmailEnabled: connection.gmailEnabled,
       calendarEnabled: connection.calendarEnabled ?? false,
-      hasCalendarReadScope: hasGoogleCapability(connection.grantedScopes, "calendar_read"),
-      hasCalendarWriteScope: hasGoogleCapability(connection.grantedScopes, "calendar_write"),
-      grantedScopes: connection.grantedScopes,
-      credentialStatus: connection.credentialStatus,
+      hasCalendarReadScope:
+        !legacyGmailScopePresent &&
+        hasGoogleCapability(connection.grantedScopes, "calendar_read"),
+      hasCalendarWriteScope:
+        !legacyGmailScopePresent &&
+        hasGoogleCapability(connection.grantedScopes, "calendar_write"),
+      hasLegacyGmailScope: legacyGmailScopePresent,
+      credentialStatus: legacyGmailScopePresent
+        ? "reauth_required" as const
+        : connection.credentialStatus,
       updatedAt: connection.updatedAt,
     };
   },
@@ -51,6 +57,9 @@ export const createOAuthState = internalMutation({
     requestedCapability: capabilityValidator,
   },
   handler: async (ctx, args) => {
+    if (args.requestedCapability === "gmail") {
+      throw new ConvexError({ code: "GOOGLE_OAUTH_STATE_INVALID" });
+    }
     const user = await getUserByAuthId(ctx, args.authUserId);
     const existing = await ctx.db
       .query("googleOAuthStates")
@@ -95,6 +104,9 @@ export const saveAuthorization = internalMutation({
     stateHash: v.string(),
   },
   handler: async (ctx, args) => {
+    if (args.requestedCapability === "gmail") {
+      throw new ConvexError({ code: "GOOGLE_OAUTH_STATE_INVALID" });
+    }
     const user = await getUserByAuthId(ctx, args.authUserId);
     const state = await ctx.db
       .query("googleOAuthStates")
@@ -121,15 +133,11 @@ export const saveAuthorization = internalMutation({
       await ctx.db.patch(connection._id, {
         email: args.email,
         grantedScopes: args.grantedScopes,
-        gmailEnabled:
-          args.requestedCapability === "gmail"
-            ? hasGoogleCapability(args.grantedScopes, "gmail")
-            : connection.gmailEnabled,
-        calendarEnabled:
-          args.requestedCapability === "calendar_read" ||
-          args.requestedCapability === "calendar_write"
-            ? hasGoogleCapability(args.grantedScopes, args.requestedCapability)
-            : (connection.calendarEnabled ?? false),
+        gmailEnabled: false,
+        calendarEnabled: hasGoogleCapability(
+          args.grantedScopes,
+          args.requestedCapability,
+        ),
         credentialStatus: "active",
         ...(args.refreshTokenCiphertext
           ? {
@@ -150,12 +158,11 @@ export const saveAuthorization = internalMutation({
       googleAccountId: args.googleAccountId,
       email: args.email,
       grantedScopes: args.grantedScopes,
-      gmailEnabled:
-        args.requestedCapability === "gmail" &&
-        hasGoogleCapability(args.grantedScopes, "gmail"),
-      calendarEnabled:
-        args.requestedCapability !== "gmail" &&
-        hasGoogleCapability(args.grantedScopes, args.requestedCapability),
+      gmailEnabled: false,
+      calendarEnabled: hasGoogleCapability(
+        args.grantedScopes,
+        args.requestedCapability,
+      ),
       credentialStatus: "active",
       refreshTokenCiphertext: args.refreshTokenCiphertext,
       refreshTokenIv: args.refreshTokenIv,
@@ -188,23 +195,6 @@ export const markReauthRequired = internalMutation({
     if (connection) {
       await ctx.db.patch(connection._id, {
         credentialStatus: "reauth_required",
-        updatedAt: Date.now(),
-      });
-    }
-  },
-});
-
-export const disableGmail = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const user = await getCurrentUserOrThrow(ctx);
-    const connection = await ctx.db
-      .query("googleConnections")
-      .withIndex("by_user_id", (q) => q.eq("userId", user._id))
-      .unique();
-    if (connection) {
-      await ctx.db.patch(connection._id, {
-        gmailEnabled: false,
         updatedAt: Date.now(),
       });
     }
